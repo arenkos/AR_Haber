@@ -152,43 +152,43 @@ struct NewsItemView: View {
     let onComment: () -> Void
     
     var body: some View {
-        VStack(alignment: .center) {
-            // Kaynak Logosunu Gösterme
-            HStack {
+                            VStack(alignment: .center) {
+                                // Kaynak Logosunu Gösterme
+                                HStack {
                 let kaynak = mapSource(news.kaynak)
-                AsyncImage(url: URL(string: "https://www.aryazilimdanismanlik.com/armedya/logo/" + kaynak + ".png")) { image in
-                    image.resizable().scaledToFit()
-                } placeholder: {
-                    ProgressView()
-                }
-                .frame(width: 50, height: 50)
-                .padding(.trailing, 8)
-            }
-            
+                                    AsyncImage(url: URL(string: "https://www.aryazilimdanismanlik.com/armedya/logo/" + kaynak + ".png")) { image in
+                                        image.resizable().scaledToFit()
+                                    } placeholder: {
+                                        ProgressView()
+                                    }
+                                    .frame(width: 50, height: 50)
+                                    .padding(.trailing, 8)
+                                }
+                                
             // Haber Görseli
-            AsyncImage(url: URL(string: news.resim_url)) { image in
-                image.resizable()
-                    .scaledToFill()
-                    .frame(maxWidth: .infinity, maxHeight: 200)
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                                AsyncImage(url: URL(string: news.resim_url)) { image in
+                                    image.resizable()
+                                        .scaledToFill()
+                                        .frame(maxWidth: .infinity, maxHeight: 200)
+                                        .clipShape(RoundedRectangle(cornerRadius: 10))
                     .onTapGesture(count: 1, perform: onTapGesture)
                     .onTapGesture(count: 2, perform: onDoubleTapGesture)
-            } placeholder: {
-                ProgressView()
-            }
-            
-            // Başlık ve Tarih
-            Text(news.baslik)
-                .font(.headline)
-                .padding(.vertical, 8)
+                                } placeholder: {
+                                    ProgressView()
+                                }
+                                
+                                // Başlık ve Tarih
+                                Text(news.baslik)
+                                    .font(.headline)
+                                    .padding(.vertical, 8)
                 .onTapGesture(perform: onTapGesture)
-            
-            Text(news.tarih)
-                .font(.subheadline)
-                .foregroundColor(.gray)
-            
-            // Like, Dislike ve Yorum Butonları
-            HStack {
+                                
+                                Text(news.tarih)
+                                    .font(.subheadline)
+                                    .foregroundColor(.gray)
+                                
+                                // Like, Dislike ve Yorum Butonları
+                                HStack {
                 Button(action: onLike) {
                     Image(systemName: isLiked ? "heart.fill" : "heart")
                         .foregroundColor(isLiked ? .red : .gray)
@@ -200,13 +200,13 @@ struct NewsItemView: View {
                 }
                 
                 Button(action: onComment) {
-                    Image(systemName: "bubble.left.and.bubble.right.fill")
-                        .foregroundColor(.gray)
-                }
-            }
-            .padding(.top, 5)
-        }
-        .padding()
+                                        Image(systemName: "bubble.left.and.bubble.right.fill")
+                                            .foregroundColor(.gray)
+                                    }
+                                }
+                                .padding(.top, 5)
+                            }
+                            .padding()
     }
 }
 
@@ -216,8 +216,8 @@ struct AdBannerView: UIViewRepresentable {
     
     func makeUIView(context: Context) -> UIView {
         let containerView = UIView()
-        let screenWidth = UIScreen.main.bounds.width // Ekran genişliği alınıyor
-        containerView.frame = CGRect(origin: .zero, size: CGSize(width: screenWidth, height: 200))
+        let screenWidth = UIScreen.main.bounds.width // Ekran genişliğini al
+        containerView.frame = CGRect(origin: .zero, size: CGSize(width: screenWidth, height: 200)) // Ekran genişliğini kullan
         
         let bannerView = BannerView()
         bannerView.adSize = AdSizeBanner
@@ -232,10 +232,11 @@ struct AdBannerView: UIViewRepresentable {
         containerView.addSubview(bannerView)
         bannerView.translatesAutoresizingMaskIntoConstraints = false
         
+        // Kenarlarda boşluk bırakmak için 20 birim boşluk ekleyelim
         NSLayoutConstraint.activate([
             bannerView.centerXAnchor.constraint(equalTo: containerView.centerXAnchor),
             bannerView.centerYAnchor.constraint(equalTo: containerView.centerYAnchor),
-            bannerView.widthAnchor.constraint(equalTo: containerView.widthAnchor, constant: -20), // Sağ ve soldan 10 birim boşluk
+            bannerView.widthAnchor.constraint(equalTo: containerView.widthAnchor, constant: -40), // 20 birim sağdan ve soldan boşluk
             bannerView.heightAnchor.constraint(equalToConstant: 200)
         ])
         
@@ -394,33 +395,33 @@ struct Genel_Akis: View {
                         }
                     }
                 )
-            }
-            .onAppear {
-                if viewModel.news.isEmpty {
-                    viewModel.loadNews(resetPage: true, arama: "", isSearch: false)
                 }
-            }
-            .refreshable {
-                viewModel.news.removeAll()
+                .onAppear {
+                    if viewModel.news.isEmpty {
+                        viewModel.loadNews(resetPage: true, arama: "", isSearch: false)
+                    }
+                }
+                .refreshable {
+                    viewModel.news.removeAll()
                 viewModel.loadNews(resetPage: true, arama: "")
-            }
-            .sheet(isPresented: $showCommentsView) {
-                if let selectedNews = selectedNews {
-                    WebViewContainer(urlString: "https://www.aryazilimdanismanlik.com/armedya/yorumlar.php?id=\(selectedNews.id)") {
-                        showCommentsView = false
+                }
+                .sheet(isPresented: $showCommentsView) {
+                    if let selectedNews = selectedNews {
+                        WebViewContainer(urlString: "https://www.aryazilimdanismanlik.com/armedya/yorumlar.php?id=\(selectedNews.id)") {
+                            showCommentsView = false
+                        }
                     }
                 }
-            }
-            .sheet(isPresented: $showWebView) {
-                if let selectedNews = selectedNews {
-                    WebViewContainer(urlString: "https://www.aryazilimdanismanlik.com/armedya/tiklanma.php?haber_url=" + String(selectedNews.haber_url)) {
-                        showWebView = false
-                    }.frame(height:0).hidden()
-                    WebViewContainer(urlString: selectedNews.haber_url) {
-                        showWebView = false
+                .sheet(isPresented: $showWebView) {
+                    if let selectedNews = selectedNews {
+                        WebViewContainer(urlString: "https://www.aryazilimdanismanlik.com/armedya/tiklanma.php?haber_url=" + String(selectedNews.haber_url)) {
+                            showWebView = false
+                        }.frame(height:0).hidden()
+                        WebViewContainer(urlString: selectedNews.haber_url) {
+                            showWebView = false
+                        }
                     }
                 }
-            }
         }
         .onAppear {
             if let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
@@ -562,8 +563,8 @@ struct Ozel_Akis: View {
                     mapSource: mapSource,
                     isLoading: viewModel.isLoading,
                     onNewsSelected: { news in
-                        selectedNews = news
-                        showWebView = true
+                                    selectedNews = news
+                                    showWebView = true
                     },
                     onReaction: toggleReaction,
                     isLiked: isLiked,
