@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		8C33E37B2D52CBE800EDB6BB /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = 8C33E37A2D52CBE800EDB6BB /* GoogleMobileAds */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		8C33E35C2D52C93800EDB6BB /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -65,6 +69,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8C33E37B2D52CBE800EDB6BB /* GoogleMobileAds in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -85,6 +90,13 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		5D7C85F3C549FD8B69E5D84F /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Pods;
+			sourceTree = "<group>";
+		};
 		8C33E33E2D52C93700EDB6BB = {
 			isa = PBXGroup;
 			children = (
@@ -92,6 +104,7 @@
 				8C33E35E2D52C93800EDB6BB /* AR HaberTests */,
 				8C33E3682D52C93800EDB6BB /* AR HaberUITests */,
 				8C33E3482D52C93700EDB6BB /* Products */,
+				5D7C85F3C549FD8B69E5D84F /* Pods */,
 			);
 			sourceTree = "<group>";
 		};
@@ -125,6 +138,7 @@
 			);
 			name = "AR Haber";
 			packageProductDependencies = (
+				8C33E37A2D52CBE800EDB6BB /* GoogleMobileAds */,
 			);
 			productName = "AR Haber";
 			productReference = 8C33E3472D52C93700EDB6BB /* AR Haber.app */;
@@ -147,8 +161,6 @@
 				8C33E35E2D52C93800EDB6BB /* AR HaberTests */,
 			);
 			name = "AR HaberTests";
-			packageProductDependencies = (
-			);
 			productName = "AR HaberTests";
 			productReference = 8C33E35B2D52C93800EDB6BB /* AR HaberTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
@@ -170,8 +182,6 @@
 				8C33E3682D52C93800EDB6BB /* AR HaberUITests */,
 			);
 			name = "AR HaberUITests";
-			packageProductDependencies = (
-			);
 			productName = "AR HaberUITests";
 			productReference = 8C33E3652D52C93800EDB6BB /* AR HaberUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
@@ -208,6 +218,9 @@
 			);
 			mainGroup = 8C33E33E2D52C93700EDB6BB;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				8C33E3792D52CBE800EDB6BB /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 8C33E3482D52C93700EDB6BB /* Products */;
 			projectDirPath = "";
@@ -293,6 +306,20 @@
 				DEVELOPMENT_ASSET_PATHS = "\"AR Haber/Preview Content\"";
 				DEVELOPMENT_TEAM = 5XW7Z342Y8;
 				ENABLE_PREVIEWS = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/GoogleUtilities\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/PromisesObjC\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/nanopb\"",
+					"\"${PODS_ROOT}/Google-Mobile-Ads-SDK/Frameworks/GoogleMobileAdsFramework\"",
+					"\"${PODS_ROOT}/GoogleAppMeasurement/Frameworks\"",
+					"\"${PODS_ROOT}/GoogleUserMessagingPlatform/Frameworks/Release\"",
+					"\"${PODS_XCFRAMEWORKS_BUILD_DIR}/Google-Mobile-Ads-SDK\"",
+					"\"${PODS_XCFRAMEWORKS_BUILD_DIR}/GoogleAppMeasurement/AdIdSupport\"",
+					"\"${PODS_XCFRAMEWORKS_BUILD_DIR}/GoogleAppMeasurement/WithoutAdIdSupport\"",
+					"\"${PODS_XCFRAMEWORKS_BUILD_DIR}/GoogleUserMessagingPlatform\"",
+					"${PODS_ROOT}/Google-Mobile-Ads-SDK",
+				);
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "AR Haber/Info.plist";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -324,6 +351,20 @@
 				DEVELOPMENT_ASSET_PATHS = "\"AR Haber/Preview Content\"";
 				DEVELOPMENT_TEAM = 5XW7Z342Y8;
 				ENABLE_PREVIEWS = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/GoogleUtilities\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/PromisesObjC\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/nanopb\"",
+					"\"${PODS_ROOT}/Google-Mobile-Ads-SDK/Frameworks/GoogleMobileAdsFramework\"",
+					"\"${PODS_ROOT}/GoogleAppMeasurement/Frameworks\"",
+					"\"${PODS_ROOT}/GoogleUserMessagingPlatform/Frameworks/Release\"",
+					"\"${PODS_XCFRAMEWORKS_BUILD_DIR}/Google-Mobile-Ads-SDK\"",
+					"\"${PODS_XCFRAMEWORKS_BUILD_DIR}/GoogleAppMeasurement/AdIdSupport\"",
+					"\"${PODS_XCFRAMEWORKS_BUILD_DIR}/GoogleAppMeasurement/WithoutAdIdSupport\"",
+					"\"${PODS_XCFRAMEWORKS_BUILD_DIR}/GoogleUserMessagingPlatform\"",
+					"${PODS_ROOT}/Google-Mobile-Ads-SDK",
+				);
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "AR Haber/Info.plist";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -575,6 +616,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		8C33E3792D52CBE800EDB6BB /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/googleads/swift-package-manager-google-mobile-ads.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		8C33E37A2D52CBE800EDB6BB /* GoogleMobileAds */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8C33E3792D52CBE800EDB6BB /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */;
+			productName = GoogleMobileAds;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 8C33E33F2D52C93700EDB6BB /* Project object */;
 }
