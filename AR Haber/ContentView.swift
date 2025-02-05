@@ -300,6 +300,8 @@ struct NewsListView: View {
                     }
                     
                     if (index + 1) % 4 == 0 {
+                        Text("-Sponsorlu Bağlantı-")
+                            .frame(maxWidth: .infinity, alignment: .center)
                         AdBannerView()
                             .frame(maxWidth: .infinity, minHeight: 200, maxHeight: 200) // Genişlik esnek, yükseklik sabit
                             .padding(.horizontal, 10) // Sağdan ve soldan 10 birim boşluk bırak
@@ -371,6 +373,7 @@ struct Genel_Akis: View {
     
     var body: some View {
         VStack {
+            
             SearchBar(text: $arama)
                 .onChange(of: arama) { oldValue, newValue in
                     viewModel.loadNews(resetPage: true, arama: arama, isSearch: true)
@@ -382,8 +385,8 @@ struct Genel_Akis: View {
                     mapSource: mapSource,
                     isLoading: viewModel.isLoading,
                     onNewsSelected: { news in
-                        selectedNews = news
-                        showWebView = true
+                                    selectedNews = news
+                                    showWebView = true
                     },
                     onReaction: toggleReaction,
                     isLiked: isLiked,
@@ -395,33 +398,33 @@ struct Genel_Akis: View {
                         }
                     }
                 )
+            }
+            .onAppear {
+                if viewModel.news.isEmpty {
+                    viewModel.loadNews(arama: "")
                 }
-                .onAppear {
-                    if viewModel.news.isEmpty {
-                        viewModel.loadNews(resetPage: true, arama: "", isSearch: false)
-                    }
-                }
-                .refreshable {
-                    viewModel.news.removeAll()
+            }
+            .refreshable {
+                viewModel.news.removeAll()
                 viewModel.loadNews(resetPage: true, arama: "")
-                }
-                .sheet(isPresented: $showCommentsView) {
-                    if let selectedNews = selectedNews {
-                        WebViewContainer(urlString: "https://www.aryazilimdanismanlik.com/armedya/yorumlar.php?id=\(selectedNews.id)") {
-                            showCommentsView = false
-                        }
+            }
+            .sheet(isPresented: $showCommentsView) {
+                if let selectedNews = selectedNews {
+                    WebViewContainer(urlString: "https://www.aryazilimdanismanlik.com/armedya/yorumlar.php?id=\(selectedNews.id)") {
+                        showCommentsView = false
                     }
                 }
-                .sheet(isPresented: $showWebView) {
-                    if let selectedNews = selectedNews {
-                        WebViewContainer(urlString: "https://www.aryazilimdanismanlik.com/armedya/tiklanma.php?haber_url=" + String(selectedNews.haber_url)) {
-                            showWebView = false
-                        }.frame(height:0).hidden()
-                        WebViewContainer(urlString: selectedNews.haber_url) {
-                            showWebView = false
-                        }
+            }
+            .sheet(isPresented: $showWebView) {
+                if let selectedNews = selectedNews {
+                    WebViewContainer(urlString: "https://www.aryazilimdanismanlik.com/armedya/tiklanma.php?haber_url=" + String(selectedNews.haber_url)) {
+                        showWebView = false
+                    }.frame(height:0).hidden()
+                    WebViewContainer(urlString: selectedNews.haber_url) {
+                        showWebView = false
                     }
                 }
+            }
         }
         .onAppear {
             if let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
@@ -549,8 +552,6 @@ struct Ozel_Akis: View {
     
     var body: some View {
         VStack {
-            GADBannerViewController()
-                .frame(height: 50)
             
             SearchBar(text: $arama)
                 .onChange(of: arama) { oldValue, newValue in
