@@ -117,7 +117,7 @@ struct ContentView: View {
                 .tabItem {
                     Label("Genel Akış", systemImage: "house.fill")
                 }
-            
+            /*
             // Haberler Sekmesi
             Kaynak()
                 .tabItem {
@@ -134,7 +134,7 @@ struct ContentView: View {
             Ozel_Akis()
                 .tabItem {
                     Label("Özel Akış", systemImage: "star.fill") // İkon güncellendi
-                }
+                }*/
         }
         .accentColor(.blue)
     }
@@ -144,12 +144,12 @@ struct NewsItemView: View {
     let news: NewsItem
     let mapSource: (String) -> String
     let onTapGesture: () -> Void
-    let onDoubleTapGesture: () -> Void
+    /*let onDoubleTapGesture: () -> Void
     let isLiked: Bool
     let isDisliked: Bool
     let onLike: () -> Void
     let onDislike: () -> Void
-    let onComment: () -> Void
+    let onComment: () -> Void*/
     
     var body: some View {
                             VStack(alignment: .center) {
@@ -172,7 +172,7 @@ struct NewsItemView: View {
                                         .frame(maxWidth: .infinity)
                                         .clipShape(RoundedRectangle(cornerRadius: 10))
                     .onTapGesture(count: 1, perform: onTapGesture)
-                    .onTapGesture(count: 2, perform: onDoubleTapGesture)
+                    /*.onTapGesture(count: 2, perform: onDoubleTapGesture)*/
                                 } placeholder: {
                                     ProgressView()
                                 }
@@ -189,7 +189,7 @@ struct NewsItemView: View {
                                 
                                 // Like, Dislike ve Yorum Butonları
                                 HStack {
-                Button(action: onLike) {
+                /*Button(action: onLike) {
                     Image(systemName: isLiked ? "heart.fill" : "heart")
                         .foregroundColor(isLiked ? .red : .gray)
                 }
@@ -200,13 +200,13 @@ struct NewsItemView: View {
                 }
                 
                 Button(action: onComment) {
-                                        Image(systemName: "bubble.left.and.bubble.right.fill")
-                                            .foregroundColor(.gray)
-                                    }
-                                }
-                                .padding(.top, 5)
-                            }
-                            .padding()
+                    Image(systemName: "bubble.left.and.bubble.right.fill")
+                        .foregroundColor(.gray)
+                }*/
+            }
+            .padding(.top, 5)
+        }
+        .padding()
     }
 }
 
@@ -272,17 +272,17 @@ struct NewsListView: View {
     let mapSource: (String) -> String
     let isLoading: Bool
     let onNewsSelected: (NewsItem) -> Void
-    let onReaction: (Int, Bool) -> Void
+    /*let onReaction: (Int, Bool) -> Void
     let isLiked: (Int) -> Bool
     let isDisliked: (Int) -> Bool
-    let onComment: () -> Void
+    let onComment: () -> Void*/
     let onLoadMore: () -> Void
     
     var body: some View {
         LazyVStack {
             ForEach(Array(news.enumerated()), id: \.element.id) { index, newsItem in
                 VStack {
-                    NewsItemView(
+                    /*NewsItemView(
                         news: newsItem,
                         mapSource: mapSource,
                         onTapGesture: { onNewsSelected(newsItem) },
@@ -292,6 +292,11 @@ struct NewsListView: View {
                         onLike: { onReaction(newsItem.id, true) },
                         onDislike: { onReaction(newsItem.id, false) },
                         onComment: onComment
+                    )*/
+                    NewsItemView(
+                        news: newsItem,
+                        mapSource: mapSource,
+                        onTapGesture: { onNewsSelected(newsItem) }
                     )
                     .onAppear {
                         if index == news.count - 3 {
@@ -380,7 +385,7 @@ struct Genel_Akis: View {
                 }
             
             ScrollView {
-                NewsListView(
+                /*NewsListView(
                     news: arama.isEmpty ? viewModel.news : filteredNews,
                     mapSource: mapSource,
                     isLoading: viewModel.isLoading,
@@ -392,6 +397,20 @@ struct Genel_Akis: View {
                     isLiked: isLiked,
                     isDisliked: isDisliked,
                     onComment: { showCommentsView.toggle() },
+                    onLoadMore: {
+                        if !viewModel.isLoading {
+                            viewModel.loadNews(resetPage: false, arama: arama)
+                        }
+                    }
+                )*/
+                NewsListView(
+                    news: arama.isEmpty ? viewModel.news : filteredNews,
+                    mapSource: mapSource,
+                    isLoading: viewModel.isLoading,
+                    onNewsSelected: { news in
+                                    selectedNews = news
+                                    showWebView = true
+                    },
                     onLoadMore: {
                         if !viewModel.isLoading {
                             viewModel.loadNews(resetPage: false, arama: arama)
@@ -413,6 +432,7 @@ struct Genel_Akis: View {
                     WebViewContainer(urlString: "https://www.aryazilimdanismanlik.com/armedya/yorumlar.php?id=\(selectedNews.id)") {
                         showCommentsView = false
                     }
+                    .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height-100) // Tam ekran genişlik
                 }
             }
             .sheet(isPresented: $showWebView) {
@@ -420,13 +440,13 @@ struct Genel_Akis: View {
                     WebViewContainer(urlString: "https://www.aryazilimdanismanlik.com/armedya/tiklanma.php?haber_url=" + String(selectedNews.haber_url)) {
                         showWebView = false
                     }
-                    .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height) // Tam ekran genişlik
+                    .frame(width: 0, height: 0) // Tam ekran genişlik
                     .hidden()
                     
                     WebViewContainer(urlString: selectedNews.haber_url) {
                         showWebView = false
                     }
-                    .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height) // Tam ekran genişlik
+                    .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height-100) // Tam ekran genişlik
                 }
             }
         }
@@ -563,7 +583,7 @@ struct Ozel_Akis: View {
                 }
             
             ScrollView {
-                NewsListView(
+                /*NewsListView(
                     news: arama.isEmpty ? viewModel.news : filteredNews,
                     mapSource: mapSource,
                     isLoading: viewModel.isLoading,
@@ -575,6 +595,20 @@ struct Ozel_Akis: View {
                     isLiked: isLiked,
                     isDisliked: isDisliked,
                     onComment: { showCommentsView.toggle() },
+                    onLoadMore: {
+                        if !viewModel.isLoading {
+                            viewModel.loadNews(resetPage: false, arama: arama)
+                        }
+                    }
+                )*/
+                NewsListView(
+                    news: arama.isEmpty ? viewModel.news : filteredNews,
+                    mapSource: mapSource,
+                    isLoading: viewModel.isLoading,
+                    onNewsSelected: { news in
+                                    selectedNews = news
+                                    showWebView = true
+                    },
                     onLoadMore: {
                         if !viewModel.isLoading {
                             viewModel.loadNews(resetPage: false, arama: arama)
