@@ -3,6 +3,10 @@ import WebKit
 import Combine
 import GoogleMobileAds
 
+class SelectedNewsManager: ObservableObject {
+    @Published var selectedNews: NewsItem?
+}
+
 struct NewsItem: Identifiable, Codable, Hashable {
     var id: Int
     var baslik: String
@@ -324,7 +328,8 @@ struct NewsListView: View {
 
 struct Genel_Akis: View {
     @StateObject private var viewModel = NewsViewModel()
-    @State private var selectedNews: NewsItem?
+    //@State private var selectedNews: NewsItem?
+    @StateObject var selectedNewsManager = SelectedNewsManager()
     @State private var showCommentsView = false
     @State private var isLiked = false
     @State private var isDisliked = false
@@ -408,8 +413,11 @@ struct Genel_Akis: View {
                     mapSource: mapSource,
                     isLoading: viewModel.isLoading,
                     onNewsSelected: { news in
-                                    selectedNews = news
-                                    showWebView = true
+                        selectedNewsManager.selectedNews = news
+                        showWebView = false
+                        DispatchQueue.main.async {
+                            showWebView = true
+                        }
                     },
                     onLoadMore: {
                         if !viewModel.isLoading {
@@ -428,7 +436,7 @@ struct Genel_Akis: View {
                 viewModel.loadNews(resetPage: true, arama: "")
             }
             .sheet(isPresented: $showCommentsView) {
-                if let selectedNews = selectedNews {
+                if let selectedNews = selectedNewsManager.selectedNews {
                     WebViewContainer(urlString: "https://www.aryazilimdanismanlik.com/armedya/yorumlar.php?id=\(selectedNews.id)") {
                         showCommentsView = false
                     }
@@ -436,7 +444,7 @@ struct Genel_Akis: View {
                 }
             }
             .sheet(isPresented: $showWebView) {
-                if let selectedNews = selectedNews {
+                if let selectedNews = selectedNewsManager.selectedNews {
                     WebViewContainer(urlString: "https://www.aryazilimdanismanlik.com/armedya/tiklanma.php?haber_url=" + String(selectedNews.haber_url)) {
                         showWebView = false
                     }
