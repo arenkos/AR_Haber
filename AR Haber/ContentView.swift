@@ -94,7 +94,7 @@ struct AdConstants {
     // Kullanılacak reklam kimliklerini seç
     static var currentBannerID: String {
         #if DEBUG
-        return testBannerID
+        return bannerAdUnitID
         #else
         return bannerAdUnitID
         #endif
@@ -102,7 +102,7 @@ struct AdConstants {
     
     static var currentInterstitialID: String {
         #if DEBUG
-        return testInterstitialID
+        return interstitialAdUnitID
         #else
         return interstitialAdUnitID
         #endif
