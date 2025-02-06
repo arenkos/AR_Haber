@@ -169,7 +169,7 @@ struct NewsItemView: View {
                                 AsyncImage(url: URL(string: news.resim_url)) { image in
                                     image.resizable()
                                         .scaledToFill()
-                                        .frame(maxWidth: .infinity, maxHeight: 200)
+                                        .frame(maxWidth: .infinity)
                                         .clipShape(RoundedRectangle(cornerRadius: 10))
                     .onTapGesture(count: 1, perform: onTapGesture)
                     .onTapGesture(count: 2, perform: onDoubleTapGesture)
@@ -419,10 +419,14 @@ struct Genel_Akis: View {
                 if let selectedNews = selectedNews {
                     WebViewContainer(urlString: "https://www.aryazilimdanismanlik.com/armedya/tiklanma.php?haber_url=" + String(selectedNews.haber_url)) {
                         showWebView = false
-                    }.frame(height:0).hidden()
+                    }
+                    .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height) // Tam ekran genişlik
+                    .hidden()
+                    
                     WebViewContainer(urlString: selectedNews.haber_url) {
                         showWebView = false
                     }
+                    .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height) // Tam ekran genişlik
                 }
             }
         }
@@ -598,10 +602,14 @@ struct Ozel_Akis: View {
                 if let selectedNews = selectedNews {
                     WebViewContainer(urlString: "https://www.aryazilimdanismanlik.com/armedya/tiklanma.php?haber_url=" + String(selectedNews.haber_url)) {
                         showWebView = false
-                    }.frame(height:0).hidden()
+                    }
+                    .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height) // Tam ekran genişlik
+                    .hidden()
+                    
                     WebViewContainer(urlString: selectedNews.haber_url) {
                         showWebView = false
                     }
+                    .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height) // Tam ekran genişlik
                 }
             }
         }

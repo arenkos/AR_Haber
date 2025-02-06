@@ -1,5 +1,6 @@
 import SwiftUI
 import GoogleMobileAds
+import BackgroundTasks
 
 @main
 struct ARHaberApp: App {
@@ -26,4 +27,19 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         }
         return true
     }
-} 
+    func registerBackgroundTasks() {
+        BGTaskScheduler.shared.register(forTaskWithIdentifier: "com.yourapp.backgroundTask", using: nil) { task in
+            self.handleBackgroundTask(task: task as! BGProcessingTask)
+        }
+    }
+
+    func handleBackgroundTask(task: BGProcessingTask) {
+        task.expirationHandler = {
+            task.setTaskCompleted(success: false)
+        }
+        
+        // Perform your background processing here
+        
+        task.setTaskCompleted(success: true)
+    }
+}
