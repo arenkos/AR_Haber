@@ -5,10 +5,12 @@ import BackgroundTasks
 @main
 struct ARHaberApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    @StateObject var authViewModel = AuthViewModel()
     
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environmentObject(authViewModel)
         }
     }
 }
