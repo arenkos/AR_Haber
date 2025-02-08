@@ -6,28 +6,25 @@
 //
 
 import SwiftUI
-import WebKit
 import Combine
 import GoogleMobileAds
 
-
 struct Kategori: View {
-    @State private var categories: [String] = [] // To hold fetched categories
-    @State private var isLoading = true // To show loading state
-    @State private var tappedCategories: Set<String> = [] // To keep track of tapped categories
+    @EnvironmentObject var authViewModel: AuthViewModel
+    @State private var categories: [String] = []
+    @State private var isLoading = true
+    @State var tappedCategories: Set<String> = []
     
     var body: some View {
         VStack {
             if isLoading {
-                ProgressView("Loading categories...") // Loading indicator
+                ProgressView("Loading categories...")
                     .progressViewStyle(CircularProgressViewStyle())
             } else {
                 List(categories, id: \.self) { category in
                     HStack {
                         Text(category)
-                        
                         Spacer()
-                        
                         Button(action: {
                             toggleBell(for: category)
                         }) {
@@ -40,37 +37,105 @@ struct Kategori: View {
             }
         }
         .onAppear {
-            fetchCategories()
+            loadSelectedCategories() // Load selected categories from the database
+            fetchCategories() // Fetch the available categories
         }
     }
     
-    // Function to fetch categories
+    // Fetch categories from the server
     func fetchCategories() {
-        // Assuming user information is availableh dynamic user data
-        
-        // URL to your PHP script that fetches categories
         let urlString = "https://www.aryazilimdanismanlik.com/armedya/fetch_kategori.php"
+        guard let url = URL(string: urlString) else { return }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.httpBody = "".data(using: .utf8)
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
         
-        guard let url = URL(string: urlString) else {
-            print("Invalid URL")
-            return
+        let task = URLSession.shared.dataTask(with: request) { data, response, error in
+            DispatchQueue.main.async { self.isLoading = false }
+            if let data = data {
+                do {
+                    if let jsonResponse = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                       let categories = jsonResponse["kategori"] as? [String] {
+                        DispatchQueue.main.async {
+                            self.categories = categories
+                        }
+                    }
+                } catch {
+                    print("JSON parsing error: \(error)")
+                }
+            }
         }
+        task.resume()
+    }
+    
+    // Toggle the bell icon and update the selected categories
+    func toggleBell(for category: String) {
+        if tappedCategories.contains(category) {
+            tappedCategories.remove(category)
+        } else {
+            tappedCategories.insert(category)
+        }
+        
+        //saveSelectedCategories() // Save the updated categories to the database
+        
+        if let user = authViewModel.user {
+            let urlString = "https://www.aryazilimdanismanlik.com/armedya/arama_kategori.php?kategori=\(category)&user=\(user.username)"
+            guard let url = URL(string: urlString) else { return }
+            
+            var request = URLRequest(url: url)
+            request.httpMethod = "GET"
+            
+            let task = URLSession.shared.dataTask(with: request) { data, response, error in
+                if error == nil { print("Request successful for category: \(category)") }
+            }
+            task.resume()
+        }
+    }
+    
+    // Save selected categories to the database
+    func saveSelectedCategories() {
+        guard let user = authViewModel.user else { return }
+        
+        let selectedCategoriesArray = Array(tappedCategories)
+        let categoriesString = selectedCategoriesArray.joined(separator: ",")
+        
+        let urlString = "https://www.aryazilimdanismanlik.com/armedya/save_tapped_categories.php"
+        guard let url = URL(string: urlString) else { return }
         
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         
-        // Prepare the body for the POST request
-        let bodyString = ""
-        
+        // Prepare body data
+        let bodyString = "user=\(user.username)&categories=\(categoriesString)"
         request.httpBody = bodyString.data(using: .utf8)
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
         
-        // Perform the network request
-        let task = URLSession.shared.dataTask(with: request) { (data, response, error) in
-            DispatchQueue.main.async {
-                self.isLoading = false // Hide loading indicator after request completes
+        let task = URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                print("Error: \(error)")
+                return
             }
             
+            guard let _ = data else {
+                print("No data received")
+                return
+            }
+            
+            print("Selected categories saved to the database")
+        }
+        
+        task.resume()
+    }
+    
+    // Load selected categories from the database
+    func loadSelectedCategories() {
+        guard let user = authViewModel.user else { return }
+        
+        let urlString = "https://www.aryazilimdanismanlik.com/armedya/load_tapped_categories.php?user=\(user.username)"
+        guard let url = URL(string: urlString) else { return }
+        
+        let task = URLSession.shared.dataTask(with: url) { data, response, error in
             if let error = error {
                 print("Error: \(error)")
                 return
@@ -82,11 +147,10 @@ struct Kategori: View {
             }
             
             do {
-                // Parse the JSON response
                 if let jsonResponse = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
-                   let categories = jsonResponse["kategori"] as? [String] {
+                   let categories = jsonResponse["categories"] as? [String] { // ✅ Dizi olarak parse et
                     DispatchQueue.main.async {
-                        self.categories = categories // Update the UI with fetched categories
+                        self.tappedCategories = Set(categories) // ✅ Direkt dizi olarak ata
                     }
                 } else {
                     print("Parsing error")
@@ -97,42 +161,5 @@ struct Kategori: View {
         }
         
         task.resume()
-    }
-    
-    // Function to handle bell tap and make the network request
-    func toggleBell(for category: String) {
-        if tappedCategories.contains(category) {
-            tappedCategories.remove(category)
-        } else {
-            tappedCategories.insert(category)
-            
-            // Send the request to the PHP script when the bell is tapped
-            let urlString = "https://www.aryazilimdanismanlik.com/armedya/arama_kategori.php?kategori=\(category)"
-            
-            guard let url = URL(string: urlString) else {
-                print("Invalid URL")
-                return
-            }
-            
-            var request = URLRequest(url: url)
-            request.httpMethod = "GET"
-            
-            let task = URLSession.shared.dataTask(with: request) { (data, response, error) in
-                if let error = error {
-                    print("Error: \(error)")
-                    return
-                }
-                
-                guard let _ = data else {
-                    print("No data received")
-                    return
-                }
-                
-                // Handle response if needed
-                print("Request successful for category: \(category)")
-            }
-            
-            task.resume()
-        }
     }
 }

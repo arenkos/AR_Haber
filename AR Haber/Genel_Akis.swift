@@ -188,19 +188,21 @@ struct Genel_Akis: View {
     }
     
     func sendReactionRequest(newsID: Int, begen: Int, begenme: Int) {
-        guard let url = URL(string: "https://www.aryazilimdanismanlik.com/armedya/tepki_mobil.php?begenme=\(begenme)&begen=\(begen)&id=\(newsID)") else { return }
-        
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        
-        let task = URLSession.shared.dataTask(with: request) { data, response, error in
-            if let error = error {
-                print("API Request Error: \(error)")
-                return
+        if let user = authViewModel.user{
+            guard let url = URL(string: "https://www.aryazilimdanismanlik.com/armedya/tepki_mobil.php?begenme=\(begenme)&begen=\(begen)&id=\(newsID)&user=\(user.username)") else { return }
+            
+            var request = URLRequest(url: url)
+            request.httpMethod = "GET"
+            
+            let task = URLSession.shared.dataTask(with: request) { data, response, error in
+                if let error = error {
+                    print("API Request Error: \(error)")
+                    return
+                }
+                print("Response: \(String(describing: response))")
             }
-            print("Response: \(String(describing: response))")
+            task.resume()
         }
-        task.resume()
     }
 
     func isLiked(newsID: Int) -> Bool {

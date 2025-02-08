@@ -20,6 +20,7 @@ struct NewsItem: Identifiable, Codable, Hashable {
     var baslik: String
     var tarih: String
     var kaynak: String
+    var kategori: String
     var resim_url: String
     var haber_url: String
     
@@ -28,6 +29,7 @@ struct NewsItem: Identifiable, Codable, Hashable {
         case baslik
         case tarih
         case kaynak
+        case kategori
         case resim_url
         case haber_url
     }
@@ -58,6 +60,53 @@ class NewsViewModel: ObservableObject {
         isLoading = true
         
         let urlString = "https://www.aryazilimdanismanlik.com/armedya/haberler_mobil.php?arama=\(arama)&carpan=\(currentPage)"
+        guard let encodedString = urlString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+              let url = URL(string: encodedString) else {
+            print("Invalid URL: \(urlString)")
+            isLoading = false
+            return
+        }
+        
+        URLSession.shared.dataTaskPublisher(for: url)
+            .map(\.data)
+            .decode(type: [NewsItem].self, decoder: JSONDecoder())
+            .receive(on: DispatchQueue.main)
+            .sink(receiveCompletion: { [weak self] completion in
+                self?.isLoading = false
+                if case let .failure(error) = completion {
+                    print("Error fetching data: \(error.localizedDescription)")
+                }
+            }, receiveValue: { [weak self] newsItems in
+                guard let self = self else { return }
+                
+                if newsItems.isEmpty {
+                    self.hasMoreContent = false
+                    return
+                }
+                
+                self.news.append(contentsOf: newsItems)
+                self.currentPage += 1
+            })
+            .store(in: &cancellables)
+    }
+    
+    func loadfilteredNews(resetPage: Bool = false, arama: String, kaynak: String, kategori: String, isSearch: Bool = false) {
+        guard hasMoreContent && !isLoading else { return }
+        
+        if resetPage {
+            currentPage = 0
+            news.removeAll()
+            hasMoreContent = true
+        }
+        
+        if isSearch && resetPage {
+            currentPage = 0
+            hasMoreContent = true
+        }
+        
+        isLoading = true
+        
+        let urlString = "https://www.aryazilimdanismanlik.com/armedya/haberler_mobil.php?arama=\(arama)&carpan=\(currentPage)&kaynak=\(kaynak)&kategori=\(kategori)"
         guard let encodedString = urlString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
               let url = URL(string: encodedString) else {
             print("Invalid URL: \(urlString)")
@@ -143,6 +192,7 @@ struct NewsListView: View {
             }
         }
     }
+    
 }
 
 struct NewsItemView: View {

@@ -26,6 +26,8 @@ struct Ozel_Akis: View {
     @State private var kullanici_adi = ""
     @State private var kullanici_sifre = ""
     @State private var interstitial: InterstitialAd?
+    @State var tappedSources: Set<String> = [] // To keep track of tapped kaynak
+    @State var tappedCategories: Set<String> = [] // To keep track of tapped kategori
     
     init() {
         loadInterstitial()
@@ -62,10 +64,21 @@ struct Ozel_Akis: View {
     
     // Filtered news based on search text
     var filteredNews: [NewsItem] {
+        let selectedSources = Kaynak().tappedSources // Seçilen kaynakları al
+        let selectedCategories = Kategori().tappedCategories
+        
+        // Kaynak ve kategoriye göre filtreleme
+        let filteredBySourceAndCategory = viewModel.news.filter {
+            selectedSources.contains($0.kaynak) && selectedCategories.contains($0.kategori)
+        }
+        
+        // Arama yapılıyorsa başlığa göre de filtrele
         if arama.isEmpty {
-            return viewModel.news
+            return filteredBySourceAndCategory
         } else {
-            return viewModel.news.filter { $0.baslik.localizedCaseInsensitiveContains(arama) }
+            return filteredBySourceAndCategory.filter {
+                $0.baslik.localizedCaseInsensitiveContains(arama)
+            }
         }
     }
     
@@ -115,13 +128,19 @@ struct Ozel_Akis: View {
                 )*/
             }
             .onAppear {
-                if viewModel.news.isEmpty {
-                    viewModel.loadNews(arama: "")
+                loadTappedSources(){
+                    loadTappedCategories(){
+                        if viewModel.news.isEmpty || !viewModel.news.isEmpty{
+                            viewModel.loadfilteredNews(resetPage: true, arama: "", kaynak: tappedSources.joined(separator: ","), kategori: tappedCategories.joined(separator: ","))
+                            print(tappedSources.joined(separator: ","))
+                            print(tappedCategories.joined(separator: ","))
+                        }
+                    }
                 }
             }
             .refreshable {
                 viewModel.news.removeAll()
-                viewModel.loadNews(resetPage: true, arama: "")
+                viewModel.loadfilteredNews(resetPage: true, arama: "", kaynak: tappedSources.joined(separator: ","), kategori: tappedCategories.joined(separator: ","))
             }
             .sheet(isPresented: $showCommentsView) {
                 if let selectedNews = selectedNewsManager.selectedNews,
@@ -133,7 +152,7 @@ struct Ozel_Akis: View {
                 }
             }
             .sheet(isPresented: $showWebView) {
-                if let selectedNews = selectedNews {
+                if let selectedNews = selectedNewsManager.selectedNews {
                     WebViewContainer(urlString: "https://www.aryazilimdanismanlik.com/armedya/tiklanma.php?haber_url=" + String(selectedNews.haber_url)) {
                         showWebView = false
                     }
@@ -155,6 +174,82 @@ struct Ozel_Akis: View {
             }
         }
     }
+    func loadTappedSources(completion: @escaping () -> Void) {
+        guard let user = authViewModel.user else { return }
+        
+        let urlString = "https://www.aryazilimdanismanlik.com/armedya/load_tapped_sources.php?user=\(user.username)"
+        guard let url = URL(string: urlString) else {
+            print("Invalid URL")
+            return
+        }
+        
+        let task = URLSession.shared.dataTask(with: url) { (data, response, error) in
+            if let error = error {
+                print("Error: \(error)")
+                return
+            }
+            
+            guard let data = data else {
+                print("No data received")
+                return
+            }
+            
+            do {
+                if let jsonResponse = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
+                   let kaynak = jsonResponse["kaynak"] as? [String] {
+                    DispatchQueue.main.async {
+                        self.tappedSources = Set(kaynak)
+                        completion() // Call completion after data is loaded
+                    }
+                } else {
+                    print("Parsing error")
+                }
+            } catch {
+                print("JSON parsing error: \(error)")
+            }
+        }
+        
+        task.resume()
+    }
+
+    func loadTappedCategories(completion: @escaping () -> Void) {
+        guard let user = authViewModel.user else { return }
+        
+        let urlString = "https://www.aryazilimdanismanlik.com/armedya/load_tapped_categories.php?user=\(user.username)"
+        guard let url = URL(string: urlString) else {
+            print("Invalid URL")
+            return
+        }
+        
+        let task = URLSession.shared.dataTask(with: url) { data, response, error in
+            if let error = error {
+                print("Error: \(error)")
+                return
+            }
+            
+            guard let data = data else {
+                print("No data received")
+                return
+            }
+            
+            do {
+                if let jsonResponse = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
+                   let categories = jsonResponse["categories"] as? [String] {
+                    DispatchQueue.main.async {
+                        self.tappedCategories = Set(categories)
+                        completion() // Call completion after data is loaded
+                    }
+                } else {
+                    print("Parsing error")
+                }
+            } catch {
+                print("JSON parsing error: \(error)")
+            }
+        }
+        
+        task.resume()
+    }
+    
     func toggleReaction(for newsID: Int, isLike: Bool) {
         if isLike {
             if likedNewsIDs.contains(newsID) {
