@@ -64,8 +64,8 @@ struct Ozel_Akis: View {
     
     // Filtered news based on search text
     var filteredNews: [NewsItem] {
-        let selectedSources = Kaynak().tappedSources // Seçilen kaynakları al
-        let selectedCategories = Kategori().tappedCategories
+        let selectedSources = tappedSources // Seçilen kaynakları al
+        let selectedCategories = tappedCategories
         
         // Kaynak ve kategoriye göre filtreleme
         let filteredBySourceAndCategory = viewModel.news.filter {
@@ -87,7 +87,7 @@ struct Ozel_Akis: View {
             
             SearchBar(text: $arama)
                 .onChange(of: arama) { oldValue, newValue in
-                    viewModel.loadNews(resetPage: true, arama: arama, isSearch: true)
+                    viewModel.loadfilteredNews(resetPage: true, arama: arama, kaynak: tappedSources.joined(separator: ","), kategori: tappedCategories.joined(separator: ","))
                 }
             
             ScrollView {
@@ -108,7 +108,8 @@ struct Ozel_Akis: View {
                     onComment: { showCommentsView.toggle() },
                     onLoadMore: {
                         if !viewModel.isLoading {
-                        viewModel.loadNews(resetPage: false, arama: arama)
+                            viewModel.loadfilteredNews(resetPage: true, arama: arama, kaynak: tappedSources.joined(separator: ","), kategori: tappedCategories.joined(separator: ","))
+
                         }
                     }
                 )
