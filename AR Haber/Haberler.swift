@@ -260,6 +260,14 @@ struct NewsItemView: View {
                         Image(systemName: "bubble.left.and.bubble.right.fill")
                             .foregroundColor(.gray)
                     }
+                    
+                    // 🔗 Paylaş Butonu
+                    if let url = URL(string: news.haber_url) {
+                        ShareLink(item: url) {
+                            Image(systemName: "square.and.arrow.up") // Paylaşım ikonu
+                                .foregroundColor(.gray)
+                        }
+                    }
                 }
                 .padding(.top, 5)
             }
