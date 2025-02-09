@@ -7,6 +7,7 @@
 
 
 import SwiftUI
+import CommonCrypto
 
 class AuthViewModel: ObservableObject {
     @Published var isLoggedIn = false
@@ -16,16 +17,26 @@ class AuthViewModel: ObservableObject {
     init() {
         loadUserSession()
     }
+    func sha256(_ string: String) -> String {
+        if let data = string.data(using: .utf8) {
+            var hash = [UInt8](repeating: 0, count: Int(CC_SHA256_DIGEST_LENGTH))
+            _ = data.withUnsafeBytes {
+                CC_SHA256($0.baseAddress, CC_LONG(data.count), &hash)
+            }
+            return hash.map { String(format: "%02x", $0) }.joined()
+        }
+        return ""
+    }
     
     func login(username: String, password: String) {
         guard let url = URL(string: "https://armedya.aryazilimdanismanlik.com/login.php") else {
             self.errorMessage = "Geçersiz URL"
             return
         }
-        
+        let hashedpassword = sha256(password)
         let parameters: [String: String] = [
             "username": username,
-            "password": password
+            "password": hashedpassword
         ]
         
         guard let postData = try? JSONSerialization.data(withJSONObject: parameters) else {
@@ -90,10 +101,10 @@ class AuthViewModel: ObservableObject {
             self.showAlert(message: self.errorMessage) // self kullanıldı
             return
         }
-        print(username, ad_soyad, telefon, email, password)
+        let hashedpassword = sha256(password)
         let parameters: [String: String] = [
             "username": username,
-            "password": password,
+            "password": hashedpassword,
             "ad_soyad": ad_soyad,
             "mail": email,
             "telefon": telefon
