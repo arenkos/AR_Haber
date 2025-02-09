@@ -26,7 +26,7 @@ struct AdConstants {
     static let requestDelay: TimeInterval = 10.0
     
     // Kullanılacak reklam kimliklerini seç
-    static var currentBannerID: String {
+    /*static var currentBannerID: String {
         #if DEBUG
         return testBannerID
         #else
@@ -40,6 +40,14 @@ struct AdConstants {
         #else
         return interstitialAdUnitID
         #endif
+    }*/
+    
+    static var currentBannerID: String {
+        return bannerAdUnitID
+    }
+
+    static var currentInterstitialID: String {
+        return interstitialAdUnitID
     }
 }
 
