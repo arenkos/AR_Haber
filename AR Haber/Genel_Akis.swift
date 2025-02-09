@@ -87,11 +87,16 @@ struct Genel_Akis: View {
                         }
                     },
                     onReaction: toggleReaction,
-                    isLiked: isLiked,
-                    isDisliked: isDisliked,
+                    isLiked: { newsID in
+                        likedNewsIDs.contains(newsID) // Kullanıcının beğendiği haberlerin kontrolü
+                    },
+                    isDisliked: { newsID in
+                        dislikedNewsIDs.contains(newsID) // Kullanıcının beğenmediği haberlerin kontrolü
+                    },
                     onComment: { showCommentsView.toggle() },
                     onLoadMore: {
                         if !viewModel.isLoading {
+                            loadUserReactions()
                             viewModel.loadNews(resetPage: false, arama: arama)
                         }
                     }
@@ -115,6 +120,10 @@ struct Genel_Akis: View {
                 )*/
             }
             .onAppear {
+                loadUserReactions(){
+                    print(dislikedNewsIDs)
+                    print(likedNewsIDs)
+                }
                 if viewModel.news.isEmpty {
                     viewModel.loadNews(arama: "")
                 }
@@ -122,6 +131,10 @@ struct Genel_Akis: View {
             .refreshable {
                 viewModel.news.removeAll()
                 viewModel.loadNews(resetPage: true, arama: "")
+                loadUserReactions(){
+                    print(dislikedNewsIDs)
+                    print(likedNewsIDs)
+                }
             }
             .sheet(isPresented: $showCommentsView) {
                 if let selectedNews = selectedNewsManager.selectedNews,
@@ -155,6 +168,53 @@ struct Genel_Akis: View {
             }
         }
     }
+    func loadUserReactions(completion: @escaping () -> Void = {}) {
+        guard let user = authViewModel.user else { return }
+        
+        let urlString = "https://www.aryazilimdanismanlik.com/armedya/load_user_reactions.php?user=\(user.username)"
+        guard let url = URL(string: urlString) else {
+            print("Invalid URL")
+            return
+        }
+        
+        let task = URLSession.shared.dataTask(with: url) { (data, response, error) in
+            if let error = error {
+                print("Error: \(error)")
+                return
+            }
+            
+            guard let data = data else {
+                print("No data received")
+                return
+            }
+            
+            do {
+                let jsonResponse = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any]
+                print("JSON Response:", jsonResponse ?? "Invalid JSON") // Gelen JSON'u kontrol et
+                
+                if let jsonResponse = jsonResponse {
+                    // Gelen veriyi doğru şekilde parse et
+                    let likedIDs = (jsonResponse["liked"] as? [Int]) ?? []
+                    let dislikedIDs = (jsonResponse["disliked"] as? [Int]) ?? []
+                    
+                    DispatchQueue.main.async {
+                        self.likedNewsIDs = Set(likedIDs)
+                        self.dislikedNewsIDs = Set(dislikedIDs)
+                        print("Liked News:", self.likedNewsIDs)
+                        print("Disliked News:", self.dislikedNewsIDs)
+                        completion()
+                    }
+                } else {
+                    print("Parsing error: Expected 'liked' and 'disliked' arrays")
+                }
+            } catch {
+                print("JSON parsing error: \(error)")
+            }
+        }
+        
+        task.resume()
+    }
+    
     func toggleReaction(for newsID: Int, isLike: Bool) {
         if isLike {
             if likedNewsIDs.contains(newsID) {
