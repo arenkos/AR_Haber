@@ -72,6 +72,7 @@ struct Genel_Akis: View {
             SearchBar(text: $arama)
                 .onChange(of: arama) { oldValue, newValue in
                     viewModel.loadNews(resetPage: true, arama: arama, isSearch: true)
+                    loadUserReactions()
                 }
             
             ScrollView {

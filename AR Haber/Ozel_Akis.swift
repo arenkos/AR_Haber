@@ -88,6 +88,7 @@ struct Ozel_Akis: View {
             SearchBar(text: $arama)
                 .onChange(of: arama) { oldValue, newValue in
                     viewModel.loadfilteredNews(resetPage: true, arama: arama, kaynak: tappedSources.joined(separator: ","), kategori: tappedCategories.joined(separator: ","))
+                    loadUserReactions()
                 }
             
             ScrollView {
