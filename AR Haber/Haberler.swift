@@ -264,7 +264,7 @@ struct NewsItemView: View {
                     
                     // Mesaj Gönder Butonu
                     Button(action: {
-                        showChatListView()
+                        showChatListView(url: news.haber_url)
                     }) {
                         Image(systemName: "envelope.fill") // Mesaj ikonu
                             .foregroundColor(.gray)
@@ -288,9 +288,8 @@ struct NewsItemView: View {
             }
         }
     }
-    
     // Mesaj gönderme arayüzünü açacak fonksiyon
-    func showChatListView() {
+    func showChatListView(url: String) {
         isChatListViewPresented = true
     }
 }

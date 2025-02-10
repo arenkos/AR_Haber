@@ -336,6 +336,33 @@ struct ChatView: View {
             }
         }
     }
+    func increaseShareCount(for url: String?) {
+        guard let url = url else { return }
+        
+        let urlString = "https://www.aryazilimdanismanlik.com/armedya/paylasim_sayisi.php"
+        guard let requestUrl = URL(string: urlString) else { return }
+        
+        var request = URLRequest(url: requestUrl)
+        request.httpMethod = "POST"
+        let bodyData = "haber_url=\(url)"
+        request.httpBody = bodyData.data(using: .utf8)
+        request.addValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                print("Hata: \(error.localizedDescription)")
+                return
+            }
+            
+            if let response = response as? HTTPURLResponse {
+                print("Yanıt durumu: \(response.statusCode)")
+            }
+            
+            if let data = data, let responseString = String(data: data, encoding: .utf8) {
+                print("Yanıt: \(responseString)")
+            }
+        }.resume()
+    }
     
     func sendMessage() {
         // Klavyeyi kapat
@@ -349,6 +376,10 @@ struct ChatView: View {
         let currentMessage = messageText
         messageText = "" // Mesaj gönderildikten sonra metni temizle
         chatService.sendMessage(senderId: senderId, receiverId: receiverId, text: currentMessage)
+        
+        if let newsItem = self.newsItem {
+            increaseShareCount(for: newsItem.haber_url)
+        }
     }
     
     func startTimer() {
