@@ -262,20 +262,20 @@ struct NewsItemView: View {
                             .foregroundColor(.gray)
                     }
                     
-                    // 🔗 Paylaş Butonu
-                    if let url = URL(string: news.haber_url) {
-                        ShareLink(item: url) {
-                            Image(systemName: "square.and.arrow.up") // Paylaşım ikonu
-                                .foregroundColor(.gray)
-                        }
-                    }
-                    
                     // Mesaj Gönder Butonu
                     Button(action: {
                         showChatListView()
                     }) {
                         Image(systemName: "envelope.fill") // Mesaj ikonu
                             .foregroundColor(.gray)
+                    }
+                    
+                    // 🔗 Paylaş Butonu
+                    if let url = URL(string: news.haber_url) {
+                        ShareLink(item: url) {
+                            Image(systemName: "square.and.arrow.up") // Paylaşım ikonu
+                                .foregroundColor(.gray)
+                        }
                     }
                 }
                 .padding(.top, 5)
