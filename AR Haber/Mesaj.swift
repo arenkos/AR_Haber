@@ -230,7 +230,8 @@ struct ChatView: View {
     @StateObject private var chatService = ChatService()
     @State private var messageText = ""
     @State private var urlToOpen: URLItem? // Açılacak URL'yi tutacak değişken
-    
+    @State private var timer: Timer? // Timer değişkeni
+
     let senderId: String
     let receiverId: String
     let newsItem: NewsItem? // Haber bilgilerini tutacak değişken
@@ -264,9 +265,10 @@ struct ChatView: View {
                                             .clipShape(RoundedRectangle(cornerRadius: 10))
                                             .frame(maxWidth: .infinity, alignment: .trailing)
                                     }
-                                    Text(message.timestamp)
-                                        .foregroundColor(.white)
-                                        .font(.system(size: 7))
+                                    
+                                Text(message.timestamp)
+                                    .font(.system(size: 7))
+                                    .frame(maxWidth: .infinity, alignment: .trailing)
                                 }
                             } else {
                                 VStack {
@@ -291,8 +293,8 @@ struct ChatView: View {
                                             .frame(maxWidth: .infinity, alignment: .leading)
                                     }
                                     Text(message.timestamp)
-                                        .foregroundColor(.white)
                                         .font(.system(size: 7))
+                                        .frame(maxWidth: .infinity, alignment: .leading)
                                 }
                                 Spacer()
                             }
@@ -323,6 +325,10 @@ struct ChatView: View {
         }
         .onAppear {
             chatService.fetchMessages(senderId: senderId, receiverId: receiverId)
+            startTimer() // Timer'ı başlat
+        }
+        .onDisappear {
+            stopTimer() // Timer'ı durdur
         }
         .sheet(item: $urlToOpen) { item in
             WebViewContainer_Mesaj(urlString: item.url) {
@@ -343,6 +349,17 @@ struct ChatView: View {
         let currentMessage = messageText
         messageText = "" // Mesaj gönderildikten sonra metni temizle
         chatService.sendMessage(senderId: senderId, receiverId: receiverId, text: currentMessage)
+    }
+    
+    func startTimer() {
+        timer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { _ in
+            chatService.fetchMessages(senderId: senderId, receiverId: receiverId) // Mesajları güncelle
+        }
+    }
+    
+    func stopTimer() {
+        timer?.invalidate()
+        timer = nil
     }
 }
 
