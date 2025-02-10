@@ -180,6 +180,7 @@ struct ChatListView: View {
     @State private var selectedUser: Usr? // Seçilen kullanıcıyı tutacak değişken
 
     var body: some View {
+        Text("Mesajlar Sayfası")
         VStack {
             // Arama çubuğu
             TextField("Kullanıcı Ara...", text: $chatService.searchText)

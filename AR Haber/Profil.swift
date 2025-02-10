@@ -282,7 +282,7 @@ struct Profil: View {
                             .cornerRadius(10)
                         }
 
-                        NavigationLink(destination: OtherFeatureView()) {
+                        /*NavigationLink(destination: OtherFeatureView()) {
                             VStack {
                                 Image(systemName: "ellipsis.circle")
                                     .font(.largeTitle)
@@ -293,7 +293,7 @@ struct Profil: View {
                             .frame(width: 150, height: 150)
                             .background(Color.purple.opacity(0.2))
                             .cornerRadius(10)
-                        }
+                        }*/
                     }
                     .padding(.horizontal)
 
