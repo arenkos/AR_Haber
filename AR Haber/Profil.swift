@@ -8,6 +8,9 @@
 
 import SwiftUI
 import CommonCrypto
+import WebKit
+import Combine
+import GoogleMobileAds
 
 class AuthViewModel: ObservableObject {
     @Published var isLoggedIn = false
@@ -228,130 +231,140 @@ struct Profil: View {
     @State private var errorMessage = ""
     
     var body: some View {
-        if authViewModel.isLoggedIn, let user = authViewModel.user {
+        NavigationView {
             VStack(spacing: 20) {
-                Text("Profil Bilgileri")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .padding(.top, 40)
-                
-                Text("Ad Soyad: \(user.ad_soyad)")
-                Text("Kullanıcı Adı: \(user.username)")
-                Text("E-posta: \(user.email)")
-                Text("Telefon: \(user.telefon)")
-                
-                Button(action: { authViewModel.logout() }) {
-                    Text("Çıkış Yap")
-                        .font(.headline)
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.red)
-                        .cornerRadius(10)
-                        .padding(.horizontal)
-                }
-                .padding(.bottom, 40)
-            }
-        } else {
-            VStack(spacing: 20) {
-                Text(isLogin ? "Giriş Yap" : "Kayıt Ol")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .padding(.top, 40)
-                
-                if !isLogin {
-                    TextField("Ad Soyad", text: $ad_soyad)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .padding(.horizontal)
-                }
-                
-                TextField("Kullanıcı Adı", text: $username)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .padding(.horizontal)
-                    .autocapitalization(.none)
-                    .onChange(of: username) { newValue in
-                        // Büyük harfleri küçük harfe çevir ve boşlukları kaldır
-                        username = newValue.lowercased().replacingOccurrences(of: " ", with: "")
-                    }
-                
-                if !isLogin {
-                    TextField("E-posta", text: $email)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .padding(.horizontal)
-                        .autocapitalization(.none)
-                        .keyboardType(.emailAddress)
-                        .onChange(of: email) { newValue in
-                            // Büyük harfleri küçük harfe çevir ve boşlukları kaldır
-                            email = newValue.lowercased().replacingOccurrences(of: " ", with: "")
-                        }
-                    
-                    TextField("Telefon", text: $telefon)
-                        .keyboardType(.numberPad) // Sadece sayısal girişe izin verir
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .padding(.horizontal)
-                        .onChange(of: telefon) { newValue in
-                            // Sadece rakamları kabul et
-                            let filtered = newValue.filter { $0.isNumber }
-                            
-                            // İlk rakamın sıfır olmamasını sağla
-                            if let firstChar = filtered.first, firstChar == "0" {
-                                telefon = String(filtered.dropFirst()) // İlk sıfırı sil
-                            } else {
-                                telefon = filtered
-                            }
-                        }
-                }
-                
-                HStack {
-                    if showPassword {
-                        TextField("Şifre", text: $password)
-                    } else {
-                        SecureField("Şifre", text: $password)
-                    }
-                    Button(action: { showPassword.toggle() }) {
-                        Image(systemName: showPassword ? "eye.slash" : "eye")
-                    }
-                }
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-                .padding(.horizontal)
-                
-                if !isLogin {
+                if authViewModel.isLoggedIn, let user = authViewModel.user {
+                    Text("Profil Bilgileri")
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                        .padding(.top, 40)
+
                     HStack {
-                        if showPassword {
-                            TextField("Şifre Tekrar", text: $confirmPassword)
-                        } else {
-                            SecureField("Şifre Tekrar", text: $confirmPassword)
+                        NavigationLink(destination: AccountSettingsView()) {
+                            VStack {
+                                Image(systemName: "gear")
+                                    .font(.largeTitle)
+                                    .padding()
+                                Text("Hesap Ayarları")
+                                    .font(.subheadline)
+                            }
+                            .frame(width: 150, height: 150)
+                            .background(Color.blue.opacity(0.2))
+                            .cornerRadius(10)
                         }
-                        Button(action: { showPassword.toggle() }) {
-                            Image(systemName: showPassword ? "eye.slash" : "eye")
+
+                        NavigationLink(destination: LikesView()) {
+                            VStack {
+                                Image(systemName: "star.fill")
+                                    .font(.largeTitle)
+                                    .padding()
+                                Text("Beğenilenler")
+                                    .font(.subheadline)
+                            }
+                            .frame(width: 150, height: 150)
+                            .background(Color.green.opacity(0.2))
+                            .cornerRadius(10)
                         }
                     }
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
                     .padding(.horizontal)
+
+                    HStack {
+                        NavigationLink(destination: ChatListView(senderId: user.username, newsItem: nil)) {
+                            VStack {
+                                Image(systemName: "bubble.left.and.bubble.right.fill")
+                                    .font(.largeTitle)
+                                    .padding()
+                                Text("Mesajlar")
+                                    .font(.subheadline)
+                            }
+                            .frame(width: 150, height: 150)
+                            .background(Color.orange.opacity(0.2))
+                            .cornerRadius(10)
+                        }
+
+                        NavigationLink(destination: OtherFeatureView()) {
+                            VStack {
+                                Image(systemName: "ellipsis.circle")
+                                    .font(.largeTitle)
+                                    .padding()
+                                Text("Diğer Özellikler")
+                                    .font(.subheadline)
+                            }
+                            .frame(width: 150, height: 150)
+                            .background(Color.purple.opacity(0.2))
+                            .cornerRadius(10)
+                        }
+                    }
+                    .padding(.horizontal)
+
+                    Button(action: { authViewModel.logout() }) {
+                        Text("Çıkış Yap")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.red)
+                            .cornerRadius(10)
+                            .padding(.horizontal)
+                    }
+                    .padding(.bottom, 40)
+                } else {
+                    // Giriş yapmamış kullanıcı için kayıt/giriş formu
+                    VStack(spacing: 20) {
+                        Text(isLogin ? "Giriş Yap" : "Kayıt Ol")
+                            .font(.largeTitle)
+                            .fontWeight(.bold)
+                            .padding(.top, 40)
+
+                        if !isLogin {
+                            TextField("Ad Soyad", text: $ad_soyad)
+                                .textFieldStyle(RoundedBorderTextFieldStyle())
+                                .padding(.horizontal)
+                        }
+
+                        TextField("Kullanıcı Adı", text: $username)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .padding(.horizontal)
+                            .autocapitalization(.none)
+                            .onChange(of: username) { newValue in
+                                username = newValue.lowercased().replacingOccurrences(of: " ", with: "")
+                            }
+
+                        SecureField("Şifre", text: $password)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .padding(.horizontal)
+
+                        if !isLogin {
+                            SecureField("Şifre Tekrar", text: $confirmPassword)
+                                .textFieldStyle(RoundedBorderTextFieldStyle())
+                                .padding(.horizontal)
+                        }
+
+                        if !errorMessage.isEmpty {
+                            Text(errorMessage)
+                                .foregroundColor(.red)
+                        }
+
+                        Button(action: handleAuth) {
+                            Text(isLogin ? "Giriş Yap" : "Kayıt Ol")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Color.blue)
+                                .cornerRadius(10)
+                                .padding(.horizontal)
+                        }
+
+                        Button(action: { isLogin.toggle() }) {
+                            Text(isLogin ? "Hesabın yok mu? Kayıt ol" : "Zaten hesabın var mı? Giriş yap")
+                                .foregroundColor(.blue)
+                        }
+                        .padding(.bottom, 40)
+                    }
                 }
-                
-                if !errorMessage.isEmpty {
-                    Text(errorMessage)
-                        .foregroundColor(.red)
-                }
-                
-                Button(action: handleAuth) {
-                    Text(isLogin ? "Giriş Yap" : "Kayıt Ol")
-                        .font(.headline)
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.blue)
-                        .cornerRadius(10)
-                        .padding(.horizontal)
-                }
-                
-                Button(action: { isLogin.toggle() }) {
-                    Text(isLogin ? "Hesabın yok mu? Kayıt ol" : "Zaten hesabın var mı? Giriş yap")
-                        .foregroundColor(.blue)
-                }
-                .padding(.bottom, 40)
             }
+            .padding()
         }
     }
     
@@ -380,5 +393,11 @@ struct Profil: View {
 struct Profil_Previews: PreviewProvider {
     static var previews: some View {
         Profil()
+    }
+}
+
+struct OtherFeatureView: View {
+    var body: some View {
+        Text("Diğer Özellikler Sayfası")
     }
 }

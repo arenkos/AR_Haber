@@ -38,22 +38,22 @@ struct ContentView: View {
                             .layoutPriority(1)
                     }
                 
-                if let user = authViewModel.user {
+                /*if let user = authViewModel.user {
                     ChatListView(senderId: user.username, newsItem: nil)
                         .tabItem {
                             Label("Mesaj", systemImage: "bubble.fill")
                                 .frame(maxWidth: .infinity)
                                 .layoutPriority(1)
                         }
-                }
+                }*/
             }
 
-            /*Profil()
+            Profil()
                 .tabItem {
                     Label("Profil", systemImage: "person.fill")
                         .frame(maxWidth: .infinity)
                         .layoutPriority(1)
-                }*/
+                }
         }
         .accentColor(.blue)
     }

@@ -36,6 +36,7 @@ struct NewsItem: Identifiable, Codable, Hashable {
 }
 
 class NewsViewModel: ObservableObject {
+    @EnvironmentObject var authViewModel: AuthViewModel
     @Published var news: [NewsItem] = []
     @Published var isLoading = false
     @Published var hasMoreContent = true
@@ -107,6 +108,52 @@ class NewsViewModel: ObservableObject {
         isLoading = true
         
         let urlString = "https://www.aryazilimdanismanlik.com/armedya/haberler_mobil.php?arama=\(arama)&carpan=\(currentPage)&kaynak=\(kaynak)&kategori=\(kategori)"
+        guard let encodedString = urlString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+              let url = URL(string: encodedString) else {
+            print("Invalid URL: \(urlString)")
+            isLoading = false
+            return
+        }
+        
+        URLSession.shared.dataTaskPublisher(for: url)
+            .map(\.data)
+            .decode(type: [NewsItem].self, decoder: JSONDecoder())
+            .receive(on: DispatchQueue.main)
+            .sink(receiveCompletion: { [weak self] completion in
+                self?.isLoading = false
+                if case let .failure(error) = completion {
+                    print("Error fetching data: \(error.localizedDescription)")
+                }
+            }, receiveValue: { [weak self] newsItems in
+                guard let self = self else { return }
+                
+                if newsItems.isEmpty {
+                    self.hasMoreContent = false
+                    return
+                }
+                
+                self.news.append(contentsOf: newsItems)
+                self.currentPage += 1
+            })
+            .store(in: &cancellables)
+    }
+    
+    func loadlikedNews(resetPage: Bool = false, arama: String, isSearch: Bool = false, username: String) {
+        guard hasMoreContent && !isLoading else { return }
+        
+        if resetPage {
+            currentPage = 0
+            news.removeAll()
+            hasMoreContent = true
+        }
+        
+        if isSearch && resetPage {
+            currentPage = 0
+            hasMoreContent = true
+        }
+        
+        isLoading = true
+        let urlString = "https://www.aryazilimdanismanlik.com/armedya/begenilen_haberler_mobil.php?arama=\(arama)&carpan=\(currentPage)&user=\(username)"
         guard let encodedString = urlString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
               let url = URL(string: encodedString) else {
             print("Invalid URL: \(urlString)")
