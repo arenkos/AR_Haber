@@ -136,15 +136,15 @@ struct Ozel_Akis: View {
             }
             .onAppear {
                 loadUserReactions(){
-                    print(dislikedNewsIDs)
-                    print(likedNewsIDs)
+                    //print(dislikedNewsIDs)
+                    //print(likedNewsIDs)
                 }
                 loadTappedSources(){
                     loadTappedCategories(){
                         if viewModel.news.isEmpty || !viewModel.news.isEmpty{
                             viewModel.loadfilteredNews(resetPage: true, arama: "", kaynak: tappedSources.joined(separator: ","), kategori: tappedCategories.joined(separator: ","))
-                            print(tappedSources.joined(separator: ","))
-                            print(tappedCategories.joined(separator: ","))
+                            //print(tappedSources.joined(separator: ","))
+                            //print(tappedCategories.joined(separator: ","))
                         }
                     }
                 }
@@ -153,8 +153,8 @@ struct Ozel_Akis: View {
                 viewModel.news.removeAll()
                 viewModel.loadfilteredNews(resetPage: true, arama: "", kaynak: tappedSources.joined(separator: ","), kategori: tappedCategories.joined(separator: ","))
                 loadUserReactions(){
-                    print(dislikedNewsIDs)
-                    print(likedNewsIDs)
+                    //print(dislikedNewsIDs)
+                    //print(likedNewsIDs)
                 }
             }
             .sheet(isPresented: $showCommentsView) {
@@ -191,7 +191,7 @@ struct Ozel_Akis: View {
     }
     func loadUserReactions(completion: @escaping () -> Void = {}) {
         guard let user = authViewModel.user else { return }
-        print("Kullanıcı ad:" + user.username)
+        //print("Kullanıcı ad:" + user.username)
         
         let urlString = "https://www.aryazilimdanismanlik.com/armedya/load_user_reactions.php?user=\(user.username)"
         guard let url = URL(string: urlString) else {
@@ -212,7 +212,7 @@ struct Ozel_Akis: View {
             
             do {
                 let jsonResponse = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any]
-                print("JSON Response:", jsonResponse ?? "Invalid JSON") // Gelen JSON'u kontrol et
+                //print("JSON Response:", jsonResponse ?? "Invalid JSON") // Gelen JSON'u kontrol et
                 
                 if let jsonResponse = jsonResponse {
                     // Gelen veriyi doğru şekilde parse et
@@ -222,12 +222,12 @@ struct Ozel_Akis: View {
                     DispatchQueue.main.async {
                         self.likedNewsIDs = Set(likedIDs)
                         self.dislikedNewsIDs = Set(dislikedIDs)
-                        print("Liked News:", self.likedNewsIDs)
-                        print("Disliked News:", self.dislikedNewsIDs)
+                        //print("Liked News:", self.likedNewsIDs)
+                        //print("Disliked News:", self.dislikedNewsIDs)
                         completion()
                     }
                 } else {
-                    print("Parsing error: Expected 'liked' and 'disliked' arrays")
+                    //print("Parsing error: Expected 'liked' and 'disliked' arrays")
                 }
             } catch {
                 print("JSON parsing error: \(error)")
@@ -342,7 +342,7 @@ struct Ozel_Akis: View {
             }
         }
 
-        print("Reaction toggled: \(isLike ? "Liked" : "Disliked")")
+        //print("Reaction toggled: \(isLike ? "Liked" : "Disliked")")
     }
     
     func sendReactionRequest(newsID: Int, begen: Int, begenme: Int) {
@@ -357,7 +357,7 @@ struct Ozel_Akis: View {
                     print("API Request Error: \(error)")
                     return
                 }
-                print("Response: \(String(describing: response))")
+                //print("Response: \(String(describing: response))")
             }
             task.resume()
         }

@@ -11,29 +11,48 @@ struct ContentView: View {
         TabView {
             Genel_Akis()
                 .tabItem {
-                    Label("Genel Akış", systemImage: "house.fill")
+                    Label("Ana sayfa", systemImage: "house.fill")
+                        .frame(maxWidth: .infinity)
+                        .layoutPriority(1)
                 }
 
             if authViewModel.isLoggedIn {
                 Kaynak()
                     .tabItem {
                         Label("Kaynak", systemImage: "newspaper.fill")
+                            .frame(maxWidth: .infinity)
+                            .layoutPriority(1)
                     }
                 
                 Kategori()
                     .tabItem {
                         Label("Kategori", systemImage: "square.grid.2x2.fill")
+                            .frame(maxWidth: .infinity)
+                            .layoutPriority(1)
                     }
                 
                 Ozel_Akis()
                     .tabItem {
-                        Label("Özel Akış", systemImage: "star.fill")
+                        Label("Özel", systemImage: "star.fill")
+                            .frame(maxWidth: .infinity)
+                            .layoutPriority(1)
                     }
+                
+                if let user = authViewModel.user {
+                    ChatListView(senderId: user.username)
+                        .tabItem {
+                            Label("Mesaj", systemImage: "bubble.fill")
+                                .frame(maxWidth: .infinity)
+                                .layoutPriority(1)
+                        }
+                }
             }
 
             Profil()
                 .tabItem {
                     Label("Profil", systemImage: "person.fill")
+                        .frame(maxWidth: .infinity)
+                        .layoutPriority(1)
                 }
         }
         .accentColor(.blue)

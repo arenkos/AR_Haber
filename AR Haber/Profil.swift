@@ -208,7 +208,7 @@ class AuthViewModel: ObservableObject {
         }
 }
 
-struct User {
+struct User{
     let email: String
     let telefon: String
     let username: String

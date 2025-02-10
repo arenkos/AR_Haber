@@ -197,6 +197,7 @@ struct NewsListView: View {
 
 struct NewsItemView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
+    @State private var isChatListViewPresented = false
     let news: NewsItem
     let mapSource: (String) -> String
     let onTapGesture: () -> Void
@@ -268,10 +269,28 @@ struct NewsItemView: View {
                                 .foregroundColor(.gray)
                         }
                     }
+                    
+                    // Mesaj Gönder Butonu
+                    Button(action: {
+                        showChatListView()
+                    }) {
+                        Image(systemName: "envelope.fill") // Mesaj ikonu
+                            .foregroundColor(.gray)
+                    }
                 }
                 .padding(.top, 5)
             }
         }
         .padding()
+        .sheet(isPresented: $isChatListViewPresented) {
+            if let user = authViewModel.user {
+                ChatListView(senderId: user.username) // Burada geçerli senderId'yi kullanın
+            }
+        }
+    }
+    
+    // Mesaj gönderme arayüzünü açacak fonksiyon
+    func showChatListView() {
+        isChatListViewPresented = true
     }
 }
