@@ -230,9 +230,9 @@ struct NewsItemView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 10))
                 .onTapGesture(count: 1, perform: onTapGesture)
                 .onTapGesture(count: 2, perform: onDoubleTapGesture)
-                            } placeholder: {
-                                ProgressView()
-                            }
+            } placeholder: {
+                ProgressView()
+            }
                                 
             // Başlık ve Tarih
             Text(news.baslik)
@@ -244,7 +244,7 @@ struct NewsItemView: View {
                 .font(.subheadline)
                 .foregroundColor(.gray)
             
-            if authViewModel.isLoggedIn{
+            if authViewModel.isLoggedIn {
                 // Like, Dislike ve Yorum Butonları
                 HStack {
                     Button(action: onLike) {
@@ -284,7 +284,7 @@ struct NewsItemView: View {
         .padding()
         .sheet(isPresented: $isChatListViewPresented) {
             if let user = authViewModel.user {
-                ChatListView(senderId: user.username) // Burada geçerli senderId'yi kullanın
+                ChatListView(senderId: user.username, newsItem: news) // Burada haber bilgilerini geçiyoruz
             }
         }
     }

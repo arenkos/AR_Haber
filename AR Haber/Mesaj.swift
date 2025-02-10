@@ -1,5 +1,6 @@
 import SwiftUI
 import Foundation
+import WebKit
 
 // Mesaj yapısı
 struct Message: Identifiable, Codable {
@@ -175,7 +176,9 @@ class ChatService: ObservableObject {
 struct ChatListView: View {
     @StateObject private var chatService = ChatService()
     let senderId: String
-    
+    let newsItem: NewsItem? // Haber bilgilerini tutacak değişken
+    @State private var selectedUser: Usr? // Seçilen kullanıcıyı tutacak değişken
+
     var body: some View {
         VStack {
             // Arama çubuğu
@@ -190,7 +193,8 @@ struct ChatListView: View {
             List {
                 ForEach(chatService.searchText.isEmpty ? chatService.recentChats : chatService.searchResults) { user in
                     Button(action: {
-                        chatService.selectedReceiver = user
+                        // Seçilen kullanıcıyı ayarla
+                        selectedUser = user
                     }) {
                         HStack {
                             Text(user.ad_soyad + "(" + user.username + ")")
@@ -208,8 +212,9 @@ struct ChatListView: View {
                 print("Son konuşmalar: \(chatService.recentChats)") // Hata ayıklama için
             }
         }
-        .sheet(item: $chatService.selectedReceiver) { user in
-            ChatView(senderId: senderId, receiverId: user.username)
+        .sheet(item: $selectedUser) { user in
+            // Kullanıcı seçildiğinde ChatView'i aç
+            ChatView(senderId: senderId, receiverId: user.username, newsItem: newsItem) // Burada haber bilgilerini geçiyoruz
         }
         .onAppear {
             if !senderId.isEmpty {
@@ -224,10 +229,11 @@ struct ChatListView: View {
 struct ChatView: View {
     @StateObject private var chatService = ChatService()
     @State private var messageText = ""
+    @State private var urlToOpen: URLItem? // Açılacak URL'yi tutacak değişken
     
     let senderId: String
     let receiverId: String
-    
+    let newsItem: NewsItem? // Haber bilgilerini tutacak değişken
     
     var body: some View {
         VStack {
@@ -237,32 +243,56 @@ struct ChatView: View {
                         HStack {
                             if message.sender_id == senderId {
                                 Spacer()
-                                VStack{
-                                    Text(message.text)
-                                        .padding()
-                                        .background(Color.blue)
-                                        .foregroundColor(.white)
-                                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                                        .frame(maxWidth: .infinity, alignment: .trailing)
+                                VStack {
+                                    // Mesaj metnini göster
+                                    if let url = URL(string: message.text), UIApplication.shared.canOpenURL(url) {
+                                        Button(action: {
+                                            urlToOpen = URLItem(url: message.text) // Tıklanan URL'yi ayarla
+                                        }) {
+                                            Text(message.text)
+                                                .padding()
+                                                .background(Color.blue)
+                                                .foregroundColor(.white)
+                                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                                                .frame(maxWidth: .infinity, alignment: .trailing)
+                                        }
+                                    } else {
+                                        Text(message.text)
+                                            .padding()
+                                            .background(Color.blue)
+                                            .foregroundColor(.white)
+                                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                                            .frame(maxWidth: .infinity, alignment: .trailing)
+                                    }
                                     Text(message.timestamp)
                                         .foregroundColor(.white)
-                                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                                        .frame(maxWidth: .infinity, alignment: .trailing)
-                                        .font(.system(size: 7)) // Adjust the font size as needed
+                                        .font(.system(size: 7))
                                 }
                             } else {
-                                VStack{
-                                    Text(message.text)
-                                        .padding()
-                                        .background(Color.green)
-                                        .foregroundColor(.white)
-                                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                VStack {
+                                    // Mesaj metnini göster
+                                    if let url = URL(string: message.text), UIApplication.shared.canOpenURL(url) {
+                                        Button(action: {
+                                            urlToOpen = URLItem(url: message.text) // Tıklanan URL'yi ayarla
+                                        }) {
+                                            Text(message.text)
+                                                .padding()
+                                                .background(Color.green)
+                                                .foregroundColor(.white)
+                                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                                                .frame(maxWidth: .infinity, alignment: .leading)
+                                        }
+                                    } else {
+                                        Text(message.text)
+                                            .padding()
+                                            .background(Color.green)
+                                            .foregroundColor(.white)
+                                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                    }
                                     Text(message.timestamp)
                                         .foregroundColor(.white)
-                                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                        .font(.system(size: 7)) // Adjust the font size as needed
+                                        .font(.system(size: 7))
                                 }
                                 Spacer()
                             }
@@ -276,6 +306,12 @@ struct ChatView: View {
                 TextField("Mesajınızı yazın...", text: $messageText)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .padding(.leading, 8)
+                    .onAppear {
+                        // Eğer haber URL'si varsa, mesaj yazma alanına ekle
+                        if let newsItem = newsItem {
+                            messageText = newsItem.haber_url // Haber URL'sini mesaj alanına ekle
+                        }
+                    }
                 
                 Button(action: sendMessage) {
                     Image(systemName: "paperplane.fill")
@@ -288,6 +324,11 @@ struct ChatView: View {
         .onAppear {
             chatService.fetchMessages(senderId: senderId, receiverId: receiverId)
         }
+        .sheet(item: $urlToOpen) { item in
+            WebViewContainer_Mesaj(urlString: item.url) {
+                urlToOpen = nil // Kapatma işlemi
+            }
+        }
     }
     
     func sendMessage() {
@@ -299,9 +340,46 @@ struct ChatView: View {
             return
         }
         
-        // Mesaj gönderme işlemi sırasında butonu devre dışı bırak
         let currentMessage = messageText
         messageText = "" // Mesaj gönderildikten sonra metni temizle
         chatService.sendMessage(senderId: senderId, receiverId: receiverId, text: currentMessage)
+    }
+}
+
+// URL'yi tutacak struct
+struct URLItem: Identifiable {
+    let id = UUID() // Her URL için benzersiz bir kimlik
+    let url: String
+}
+
+// WebViewContainer
+struct WebViewContainer_Mesaj: UIViewRepresentable {
+    let urlString: String
+    let onClose: () -> Void
+    
+    func makeUIView(context: Context) -> WKWebView {
+        WKWebView()
+    }
+    
+    func updateUIView(_ uiView: WKWebView, context: Context) {
+        if let url = URL(string: urlString) {
+            uiView.load(URLRequest(url: url))
+        }
+    }
+    
+    static func dismantleUIView(_ uiView: WKWebView, coordinator: Coordinator) {
+        uiView.stopLoading()
+    }
+    
+    func makeCoordinator() -> Coordinator {
+        Coordinator(onClose: onClose)
+    }
+    
+    class Coordinator: NSObject {
+        let onClose: () -> Void
+        
+        init(onClose: @escaping () -> Void) {
+            self.onClose = onClose
+        }
     }
 }
