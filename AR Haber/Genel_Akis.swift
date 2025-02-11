@@ -33,7 +33,7 @@ struct Genel_Akis: View {
         InterstitialAd.load(with: AdConstants.currentInterstitialID,
                           request: request) { [self] ad, error in
             if let error = error {
-                print("Failed to load interstitial ad with error: \(error.localizedDescription)")
+                //print("Failed to load interstitial ad with error: \(error.localizedDescription)")
                 return
             }
             interstitial = ad
@@ -121,10 +121,7 @@ struct Genel_Akis: View {
                 )*/
             }
             .onAppear {
-                loadUserReactions(){
-                    print(dislikedNewsIDs)
-                    print(likedNewsIDs)
-                }
+                loadUserReactions()
                 if viewModel.news.isEmpty {
                     viewModel.loadNews(arama: "")
                 }
@@ -132,10 +129,7 @@ struct Genel_Akis: View {
             .refreshable {
                 viewModel.news.removeAll()
                 viewModel.loadNews(resetPage: true, arama: "")
-                loadUserReactions(){
-                    print(dislikedNewsIDs)
-                    print(likedNewsIDs)
-                }
+                loadUserReactions()
             }
             .sheet(isPresented: $showCommentsView) {
                 if let selectedNews = selectedNewsManager.selectedNews,

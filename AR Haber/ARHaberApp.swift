@@ -1,6 +1,7 @@
 import SwiftUI
 import GoogleMobileAds
 import BackgroundTasks
+import UserNotifications
 
 @main
 struct ARHaberApp: App {
@@ -11,37 +12,20 @@ struct ARHaberApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(authViewModel)
+                .onAppear {
+                    registerForPushNotifications() // Bildirim izni isteme
+                }
         }
     }
 }
 
-class AppDelegate: NSObject, UIApplicationDelegate {
-    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
-        // AdMob'u başlat
-        MobileAds.shared.start { status in
-            print("AdMob initialization status: \(status)")
-            
-            // Test cihazı ayarlarını başlatma tamamlandıktan sonra yap
-            MobileAds.shared.requestConfiguration.testDeviceIdentifiers = [
-                "c0cfc390665976fe28ee5f7f48d859f9",  // Sizin cihazınızın test kimliği
-                "GADSimulatorID"                      // Simulator için
-            ]
+func registerForPushNotifications() {
+    UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+        if let error = error {
+            print("İzin hatası: \(error.localizedDescription)")
         }
-        return true
-    }
-    func registerBackgroundTasks() {
-        BGTaskScheduler.shared.register(forTaskWithIdentifier: "com.yourapp.backgroundTask", using: nil) { task in
-            self.handleBackgroundTask(task: task as! BGProcessingTask)
+        DispatchQueue.main.async {
+            UIApplication.shared.registerForRemoteNotifications()
         }
-    }
-
-    func handleBackgroundTask(task: BGProcessingTask) {
-        task.expirationHandler = {
-            task.setTaskCompleted(success: false)
-        }
-        
-        // Perform your background processing here
-        
-        task.setTaskCompleted(success: true)
     }
 }

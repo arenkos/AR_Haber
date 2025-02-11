@@ -50,6 +50,7 @@ struct Usr: Identifiable, Codable, Equatable {
 
 // Sohbet servisi
 class ChatService: ObservableObject {
+    @EnvironmentObject var authViewModel: AuthViewModel
     @Published var messages: [Message] = []
     @Published var searchResults: [Usr] = []
     @Published var recentChats: [Usr] = []
@@ -69,7 +70,7 @@ class ChatService: ObservableObject {
                 let messages = try JSONDecoder().decode([Message].self, from: data)
                 DispatchQueue.main.async {
                     self.messages = messages
-                    print("Mesajlar alındı: \(messages)") // Hata ayıklama için
+                    //print("Mesajlar alındı: \(messages)") // Hata ayıklama için
                 }
             } catch {
                 print("Mesajlar alınamadı: \(error)")
@@ -77,15 +78,18 @@ class ChatService: ObservableObject {
         }.resume()
     }
     
-    func sendMessage(senderId: String, receiverId: String, text: String) {
-        guard let url = URL(string: "https://www.aryazilimdanismanlik.com/armedya/send_message.php") else { return }
+    func sendMessage(senderId: String, receiverId: String, text: String, deviceToken: String, completion: @escaping (Bool, String) -> Void) {
+        guard let url = URL(string: "https://www.aryazilimdanismanlik.com/armedya/send_message.php") else {
+            completion(false, "URL Hatası")
+            return
+        }
         
         let body: [String: Any] = [
             "sender_id": senderId,
             "receiver_id": receiverId,
-            "text": text
+            "text": text,
+            "device_token": deviceToken
         ]
-        
         
         let jsonData = try? JSONSerialization.data(withJSONObject: body)
         
@@ -97,26 +101,30 @@ class ChatService: ObservableObject {
         URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
                 print("Mesaj gönderme hatası: \(error.localizedDescription)")
+                completion(false, "Mesaj gönderme hatası: \(error.localizedDescription)")
                 return
             }
             
-            // API'den gelen yanıtı kontrol et
             if let httpResponse = response as? HTTPURLResponse {
                 print("Mesaj gönderme yanıtı: \(httpResponse.statusCode)")
                 if httpResponse.statusCode == 200 {
-                    print("Mesaj başarıyla gönderildi.")
-                } else {
-                    // Hata mesajını kontrol et
                     if let data = data, let responseString = String(data: data, encoding: .utf8) {
-                        print("Mesaj gönderilemedi, durum kodu: \(httpResponse.statusCode), Yanıt: \(responseString)")
-                    } else {
-                        print("Mesaj gönderilemedi, durum kodu: \(httpResponse.statusCode)")
+                        // PHP'den gelen yanıtı al
+                        if let jsonResponse = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
+                           let status = jsonResponse["status"] as? String,
+                           let message = jsonResponse["message"] as? String {
+                            if status == "success" {
+                                print("Mesaj başarıyla gönderildi.")
+                                completion(true, message)
+                            } else {
+                                print("Bildirim gönderme hatası: \(message)")
+                                completion(false, message)
+                            }
+                        }
                     }
+                } else {
+                    completion(false, "Mesaj gönderilemedi.")
                 }
-            }
-            
-            DispatchQueue.main.async {
-                self.fetchMessages(senderId: senderId, receiverId: receiverId)
             }
         }.resume()
     }
@@ -228,6 +236,7 @@ struct ChatListView: View {
 
 // Sohbet görünümü
 struct ChatView: View {
+    @EnvironmentObject var authViewModel: AuthViewModel
     @StateObject private var chatService = ChatService()
     @State private var messageText = ""
     @State private var urlToOpen: URLItem? // Açılacak URL'yi tutacak değişken
@@ -239,18 +248,26 @@ struct ChatView: View {
     
     var body: some View {
         VStack {
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 10) {
-                    ForEach(chatService.messages) { message in
-                        HStack {
-                            if message.sender_id == senderId {
-                                Spacer()
-                                VStack {
-                                    // Mesaj metnini göster
-                                    if let url = URL(string: message.text), UIApplication.shared.canOpenURL(url) {
-                                        Button(action: {
-                                            urlToOpen = URLItem(url: message.text) // Tıklanan URL'yi ayarla
-                                        }) {
+            ScrollViewReader { scrollView in
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 10, pinnedViews: []) {
+                        ForEach(chatService.messages.reversed()) { message in // Listeyi ters çeviriyoruz
+                            HStack {
+                                if message.sender_id == senderId {
+                                    Spacer()
+                                    VStack {
+                                        if let url = URL(string: message.text), UIApplication.shared.canOpenURL(url) {
+                                            Button(action: {
+                                                urlToOpen = URLItem(url: message.text)
+                                            }) {
+                                                Text(message.text)
+                                                    .padding()
+                                                    .background(Color.blue)
+                                                    .foregroundColor(.white)
+                                                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                                                    .frame(maxWidth: .infinity, alignment: .trailing)
+                                            }
+                                        } else {
                                             Text(message.text)
                                                 .padding()
                                                 .background(Color.blue)
@@ -258,26 +275,25 @@ struct ChatView: View {
                                                 .clipShape(RoundedRectangle(cornerRadius: 10))
                                                 .frame(maxWidth: .infinity, alignment: .trailing)
                                         }
-                                    } else {
-                                        Text(message.text)
-                                            .padding()
-                                            .background(Color.blue)
-                                            .foregroundColor(.white)
-                                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                                        
+                                        Text(message.timestamp)
+                                            .font(.system(size: 7))
                                             .frame(maxWidth: .infinity, alignment: .trailing)
                                     }
-                                    
-                                Text(message.timestamp)
-                                    .font(.system(size: 7))
-                                    .frame(maxWidth: .infinity, alignment: .trailing)
-                                }
-                            } else {
-                                VStack {
-                                    // Mesaj metnini göster
-                                    if let url = URL(string: message.text), UIApplication.shared.canOpenURL(url) {
-                                        Button(action: {
-                                            urlToOpen = URLItem(url: message.text) // Tıklanan URL'yi ayarla
-                                        }) {
+                                } else {
+                                    VStack {
+                                        if let url = URL(string: message.text), UIApplication.shared.canOpenURL(url) {
+                                            Button(action: {
+                                                urlToOpen = URLItem(url: message.text)
+                                            }) {
+                                                Text(message.text)
+                                                    .padding()
+                                                    .background(Color.green)
+                                                    .foregroundColor(.white)
+                                                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                            }
+                                        } else {
                                             Text(message.text)
                                                 .padding()
                                                 .background(Color.green)
@@ -285,37 +301,37 @@ struct ChatView: View {
                                                 .clipShape(RoundedRectangle(cornerRadius: 10))
                                                 .frame(maxWidth: .infinity, alignment: .leading)
                                         }
-                                    } else {
-                                        Text(message.text)
-                                            .padding()
-                                            .background(Color.green)
-                                            .foregroundColor(.white)
-                                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                                        Text(message.timestamp)
+                                            .font(.system(size: 7))
                                             .frame(maxWidth: .infinity, alignment: .leading)
                                     }
-                                    Text(message.timestamp)
-                                        .font(.system(size: 7))
-                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                    Spacer()
                                 }
-                                Spacer()
                             }
+                            .id(message.id)
+                        }
+                    }
+                    .padding()
+                }
+                .onAppear {
+                    chatService.fetchMessages(senderId: senderId, receiverId: receiverId)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        if let lastMessage = chatService.messages.first {
+                            scrollView.scrollTo(lastMessage.id, anchor: .bottom)
                         }
                     }
                 }
-                .padding()
+                .onDisappear {
+                    // Görünüm kaybolduğunda observer'ı kaldır
+                    NotificationCenter.default.removeObserver(self, name: NSNotification.Name("OpenChat"), object: nil)
+                }
             }
-            
+
             HStack {
                 TextField("Mesajınızı yazın...", text: $messageText)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .padding(.leading, 8)
-                    .onAppear {
-                        // Eğer haber URL'si varsa, mesaj yazma alanına ekle
-                        if let newsItem = newsItem {
-                            messageText = newsItem.haber_url // Haber URL'sini mesaj alanına ekle
-                        }
-                    }
-                
+
                 Button(action: sendMessage) {
                     Image(systemName: "paperplane.fill")
                         .foregroundColor(.blue)
@@ -376,10 +392,23 @@ struct ChatView: View {
         
         let currentMessage = messageText
         messageText = "" // Mesaj gönderildikten sonra metni temizle
-        chatService.sendMessage(senderId: senderId, receiverId: receiverId, text: currentMessage)
+
+        // Cihaz token'ını al ve print et
+        guard let deviceToken = self.authViewModel.deviceToken else {
+            print("Cihaz Token'ı bulunamadı.")
+            return
+        }
+
+        print("Cihaz Token'ı: \(deviceToken)")
         
-        if let newsItem = self.newsItem {
-            increaseShareCount(for: newsItem.haber_url)
+        chatService.sendMessage(senderId: senderId, receiverId: receiverId, text: currentMessage, deviceToken: deviceToken) { success, message in
+            if success {
+                DispatchQueue.main.async {
+                    chatService.fetchMessages(senderId: self.senderId, receiverId: self.receiverId)
+                }
+            } else {
+                print("Mesaj gönderilemedi: \(message)")
+            }
         }
     }
     

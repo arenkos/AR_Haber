@@ -16,10 +16,28 @@ class AuthViewModel: ObservableObject {
     @Published var isLoggedIn = false
     @Published var user: User? = nil
     @Published var errorMessage: String = ""
+    static let shared = AuthViewModel() // Singleton
+
+    @Published var deviceToken: String? {
+        didSet {
+            if let token = deviceToken {
+                UserDefaults.standard.set(token, forKey: "deviceToken")
+            }
+        }
+    }
 
     init() {
         loadUserSession()
+        self.deviceToken = UserDefaults.standard.string(forKey: "deviceToken")
     }
+
+    func setDeviceToken(_ token: String) {
+        DispatchQueue.main.async {
+            self.deviceToken = token
+            print("✅ AuthViewModel içinde token güncellendi: \(token)")
+        }
+    }
+    
     func sha256(_ string: String) -> String {
         if let data = string.data(using: .utf8) {
             var hash = [UInt8](repeating: 0, count: Int(CC_SHA256_DIGEST_LENGTH))
@@ -218,8 +236,13 @@ struct User{
     let ad_soyad: String
 }
 
+class Control: ObservableObject {
+    @Published var notification = false
+}
+
 struct Profil: View {
     @EnvironmentObject var authViewModel: AuthViewModel
+    @EnvironmentObject var control: Control
     @State private var isLogin = true
     @State private var ad_soyad = ""
     @State private var username = ""
@@ -229,6 +252,9 @@ struct Profil: View {
     @State private var confirmPassword = ""
     @State private var showPassword = false
     @State private var errorMessage = ""
+    @State private var selectedUserId: String? = nil
+    @State private var isChatActive: Bool = false
+    private var usr: String?
     
     var body: some View {
         NavigationView {
@@ -365,6 +391,14 @@ struct Profil: View {
                 }
             }
             .padding()
+        }
+        .onAppear(){
+            NotificationCenter.default.addObserver(forName: NSNotification.Name("OpenChat"), object: nil, queue: .main) { notification in
+                if let userInfo = notification.userInfo, let userId = userInfo["userId"] as? String {
+                    self.selectedUserId = userId
+                    self.isChatActive = true // Mesajlaşma sayfasına yönlendirme yapılıyor
+                }
+            }
         }
     }
     

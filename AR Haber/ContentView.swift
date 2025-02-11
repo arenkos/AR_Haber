@@ -6,15 +6,18 @@ import GoogleMobileAds
 
 struct ContentView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
+    @State private var selectedUserId: String? = nil
+    @State private var selectedTab: Int = 0
 
     var body: some View {
-        TabView {
+        TabView(selection: $selectedTab) {
             Genel_Akis()
                 .tabItem {
                     Label("Ana sayfa", systemImage: "house.fill")
                         .frame(maxWidth: .infinity)
                         .layoutPriority(1)
                 }
+                .tag(0)
 
             if authViewModel.isLoggedIn {
                 Kaynak()
@@ -23,6 +26,7 @@ struct ContentView: View {
                             .frame(maxWidth: .infinity)
                             .layoutPriority(1)
                     }
+                    .tag(1)
                 
                 Kategori()
                     .tabItem {
@@ -30,6 +34,7 @@ struct ContentView: View {
                             .frame(maxWidth: .infinity)
                             .layoutPriority(1)
                     }
+                    .tag(2)
                 
                 Ozel_Akis()
                     .tabItem {
@@ -37,14 +42,16 @@ struct ContentView: View {
                             .frame(maxWidth: .infinity)
                             .layoutPriority(1)
                     }
-                
+                    .tag(3)
+
                 /*if let user = authViewModel.user {
-                    ChatListView(senderId: user.username, newsItem: nil)
+                    ChatListView(senderId: user.username, receiverId: selectedUserId)
                         .tabItem {
                             Label("Mesaj", systemImage: "bubble.fill")
                                 .frame(maxWidth: .infinity)
                                 .layoutPriority(1)
                         }
+                        .tag(4)
                 }*/
             }
 
@@ -54,8 +61,19 @@ struct ContentView: View {
                         .frame(maxWidth: .infinity)
                         .layoutPriority(1)
                 }
+                .tag(5)
         }
         .accentColor(.blue)
+        .onAppear {
+            NotificationCenter.default.addObserver(forName: NSNotification.Name("OpenChat"), object: nil, queue: .main) { notification in
+                if let userInfo = notification.userInfo, let userId = userInfo["userId"] as? String {
+                    self.selectedUserId = userId
+                    self.selectedTab = 5 // Mesaj sekmesine yönlendir
+                    let control = Control()
+                    control.notification = true
+                }
+            }
+        }
     }
 }
 
