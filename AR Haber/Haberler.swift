@@ -244,6 +244,7 @@ struct NewsListView: View {
 
 struct NewsItemView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
+    var offlineNewsManager = OfflineNewsManager.shared
     @State private var isChatListViewPresented = false
     let news: NewsItem
     let mapSource: (String) -> String
@@ -323,6 +324,14 @@ struct NewsItemView: View {
                             Image(systemName: "square.and.arrow.up") // Paylaşım ikonu
                                 .foregroundColor(.gray)
                         }
+                    }
+                    
+                    // Haberi Kaydet Butonu
+                    Button(action: {
+                        offlineNewsManager.get(kaynak: news.kaynak, haber_url: news.haber_url, resim_url: news.resim_url, baslik: news.baslik, tarih: news.tarih)
+                    }) {
+                        Image(systemName: "bookmark")  // Kaydetme işlemi için uygun simge
+                            .foregroundColor(.gray)
                     }
                 }
                 .padding(.top, 5)

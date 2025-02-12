@@ -264,7 +264,6 @@ struct Profil: View {
                         .font(.largeTitle)
                         .fontWeight(.bold)
                         .padding(.top, 40)
-
                     HStack {
                         NavigationLink(destination: AccountSettingsView()) {
                             VStack {
@@ -308,18 +307,18 @@ struct Profil: View {
                             .cornerRadius(10)
                         }
 
-                        /*NavigationLink(destination: OtherFeatureView()) {
+                        NavigationLink(destination: OfflineNewsListView(haber: "a")) {
                             VStack {
-                                Image(systemName: "ellipsis.circle")
+                                Image(systemName: "archivebox.fill")  // Daha uygun bir simge
                                     .font(.largeTitle)
                                     .padding()
-                                Text("Diğer Özellikler")
+                                Text("Kaydedilen Haberler")
                                     .font(.subheadline)
                             }
                             .frame(width: 150, height: 150)
                             .background(Color.purple.opacity(0.2))
                             .cornerRadius(10)
-                        }*/
+                        }
                     }
                     .padding(.horizontal)
 
