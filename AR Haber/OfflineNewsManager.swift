@@ -308,7 +308,7 @@ struct OfflineNewsListView: View {
                     .padding()
                 
                 Button(action: {offlineNewsManager.deleteAllSavedNews() }){
-                    Text("İndirilen Haberleri Sil")
+                    Text("Kaydedilen Haberleri Sil")
                 }
                 List(filteredNews) { news in
                     VStack(alignment: .center) {
