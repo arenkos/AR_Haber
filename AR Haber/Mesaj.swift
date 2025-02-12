@@ -314,6 +314,7 @@ struct ChatView: View {
                     .padding()
                 }
                 .onAppear {
+                    get_device_token(user: receiverId)
                     chatService.fetchMessages(senderId: senderId, receiverId: receiverId)
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                         if let lastMessage = chatService.messages.first {
@@ -353,6 +354,42 @@ struct ChatView: View {
             }
         }
     }
+    func get_device_token(user: String) {
+        guard let url = URL(string: "https://www.aryazilimdanismanlik.com/armedya/get_device_token.php") else { return }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+
+        let postString = "user=\(user)"
+        request.httpBody = postString.data(using: .utf8)
+
+        let task = URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                print("Hata: \(error.localizedDescription)")
+                return
+            }
+
+            guard let data = data else {
+                print("Geçersiz veri alındı")
+                return
+            }
+
+            if let json = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
+                if let token = json["device_token"] as? String {
+                    DispatchQueue.main.async {
+                        self.authViewModel.deviceToken = token
+                    }
+                } else {
+                    print("Token bulunamadı")
+                }
+            } else {
+                print("JSON çözümleme hatası")
+            }
+        }
+        task.resume()
+    }
+    
     func increaseShareCount(for url: String?) {
         guard let url = url else { return }
         

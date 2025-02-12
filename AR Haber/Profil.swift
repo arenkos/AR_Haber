@@ -55,10 +55,16 @@ class AuthViewModel: ObservableObject {
             self.errorMessage = "Geçersiz URL"
             return
         }
+        guard let deviceToken = self.deviceToken else {
+            print("Cihaz Token'ı bulunamadı.")
+            return
+        }
+        
         let hashedpassword = sha256(password)
         let parameters: [String: String] = [
             "username": username,
-            "password": hashedpassword
+            "password": hashedpassword,
+            "device_token": deviceToken
         ]
         
         guard let postData = try? JSONSerialization.data(withJSONObject: parameters) else {
