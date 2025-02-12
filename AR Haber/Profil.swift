@@ -13,6 +13,7 @@ import Combine
 import GoogleMobileAds
 
 class AuthViewModel: ObservableObject {
+    var offlineNewsManager = OfflineNewsManager.shared
     @Published var isLoggedIn = false
     @Published var user: User? = nil
     @Published var errorMessage: String = ""
@@ -195,6 +196,7 @@ class AuthViewModel: ObservableObject {
         self.isLoggedIn = false
         self.user = nil
         
+        offlineNewsManager.deleteAllSavedNews()
         clearUserSession()
     }
     
