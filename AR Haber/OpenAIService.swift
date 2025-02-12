@@ -5,7 +5,7 @@
 //  Created by Aren Koş on 12.02.2025.
 //
 
-
+import SwiftUI
 import Foundation
 
 struct OpenAIRequest: Codable {
@@ -20,21 +20,21 @@ struct OpenAIResponse: Codable {
 }
 
 struct Choice: Codable {
-    let message: Message
+    let message: Message_Summary
 }
 
-struct Message: Codable {
+struct Message_Summary: Codable {
     let content: String
 }
 
 class OpenAIService {
-    private let apiKey = "API_ANAHTARINIZ" // OpenAI API anahtarınızı buraya ekleyin
+    private let apiKey = "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" // OpenAI API anahtarınızı buraya ekleyin
     private let apiUrl = "https://api.openai.com/v1/chat/completions"
 
     func summarize(text: String, completion: @escaping (String?) -> Void) {
         guard let url = URL(string: apiUrl) else { return }
         
-        let prompt = "Bu haberi kısaca özetle: \(text)"
+        let prompt = "Bu sitedeki haberi kısaca özetle: \(text)"
         let requestData = OpenAIRequest(
             model: "gpt-3.5-turbo", 
             messages: [["role": "user", "content": prompt]], 
@@ -70,5 +70,34 @@ class OpenAIService {
                 completion(nil)
             }
         }.resume()
+    }
+}
+
+struct NewsSummaryView: View {
+    let newsText: String
+    @State private var summary: String = "Özetleniyor..."
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Haber Özeti")
+                .font(.title)
+                .bold()
+            
+            Text(summary)
+                .font(.body)
+                .padding()
+            
+            Spacer()
+        }
+        .padding()
+        .onAppear {
+            OpenAIService().summarize(text: newsText) { result in
+                if let result = result {
+                    summary = result
+                } else {
+                    summary = "Özet oluşturulamadı."
+                }
+            }
+        }
     }
 }
