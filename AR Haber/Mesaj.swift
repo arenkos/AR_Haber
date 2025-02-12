@@ -435,7 +435,7 @@ struct ChatView: View {
         
         let currentMessage = messageText
         messageText = "" // Mesaj gönderildikten sonra metni temizle
-
+        
         // Cihaz token'ını al ve print et
         guard let deviceToken = self.authViewModel.deviceToken else {
             print("Cihaz Token'ı bulunamadı.")
@@ -449,6 +449,10 @@ struct ChatView: View {
                 DispatchQueue.main.async {
                     chatService.fetchMessages(senderId: self.senderId, receiverId: self.receiverId)
                 }
+                if let newsItem = newsItem {
+                    increaseShareCount(for: newsItem.haber_url)
+                }
+                
             } else {
                 print("Mesaj gönderilemedi: \(message)")
             }
