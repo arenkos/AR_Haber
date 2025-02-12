@@ -216,30 +216,36 @@ struct Genel_Akis: View {
                 likedNewsIDs.remove(newsID)
                 isLiked = false
                 sendReactionRequest(newsID: newsID, begen: 0, begenme: 0)
+                print("Beğenilmişti beğeni sonrası geri alındı")
             } else {
                 likedNewsIDs.insert(newsID)
                 isLiked = true
                 if dislikedNewsIDs.contains(newsID) {
                     dislikedNewsIDs.remove(newsID)
+                    isDisliked = false
                 }
                 sendReactionRequest(newsID: newsID, begen: 1, begenme: 0)
+                print("Beğenildi")
             }
         } else {
             if dislikedNewsIDs.contains(newsID) {
                 dislikedNewsIDs.remove(newsID)
                 isDisliked = false
                 sendReactionRequest(newsID: newsID, begen: 0, begenme: 0)
+                print("Beğenme basılmıştı tekrar beğenme sonrası geri alındı")
             } else {
                 dislikedNewsIDs.insert(newsID)
                 isDisliked = true
                 if likedNewsIDs.contains(newsID) {
                     likedNewsIDs.remove(newsID)
+                    isLiked = false
                 }
                 sendReactionRequest(newsID: newsID, begen: 0, begenme: 1)
+                print("Beğenme yapıldı")
             }
         }
 
-        //print("Reaction toggled: \(isLike ? "Liked" : "Disliked")")
+        print("Reaction toggled: \(isLike ? "Liked" : "Disliked")")
     }
     
     func sendReactionRequest(newsID: Int, begen: Int, begenme: Int) {

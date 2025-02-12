@@ -332,6 +332,12 @@ struct ChatView: View {
                 TextField("Mesajınızı yazın...", text: $messageText)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .padding(.leading, 8)
+                    .onAppear {
+                        // Eğer haber URL'si varsa, mesaj yazma alanına ekle
+                        if let newsItem = newsItem {
+                            messageText = newsItem.haber_url // Haber URL'sini mesaj alanına ekle
+                        }
+                    }
 
                 Button(action: sendMessage) {
                     Image(systemName: "paperplane.fill")
