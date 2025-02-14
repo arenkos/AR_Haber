@@ -114,7 +114,7 @@ struct Ozel_Akis: View {
                     onLoadMore: {
                         if !viewModel.isLoading {
                             loadUserReactions()
-                            viewModel.loadfilteredNews(resetPage: true, arama: arama, kaynak: tappedSources.joined(separator: ","), kategori: tappedCategories.joined(separator: ","))
+                            viewModel.loadfilteredNews(resetPage: false, arama: arama, kaynak: tappedSources.joined(separator: ","), kategori: tappedCategories.joined(separator: ","))
 
                         }
                     }
@@ -141,10 +141,12 @@ struct Ozel_Akis: View {
                 }
                 loadTappedSources(){
                     loadTappedCategories(){
-                        if viewModel.news.isEmpty || !viewModel.news.isEmpty{
+                        if viewModel.news.isEmpty{
                             viewModel.loadfilteredNews(resetPage: true, arama: "", kaynak: tappedSources.joined(separator: ","), kategori: tappedCategories.joined(separator: ","))
                             //print(tappedSources.joined(separator: ","))
                             //print(tappedCategories.joined(separator: ","))
+                        }else{
+                            viewModel.loadfilteredNews(resetPage: true, arama: "", kaynak: tappedSources.joined(separator: ","), kategori: tappedCategories.joined(separator: ","))
                         }
                     }
                 }
