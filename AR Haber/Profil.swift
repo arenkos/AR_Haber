@@ -199,42 +199,78 @@ class AuthViewModel: ObservableObject {
     }
 
     func logout() {
+        guard let user = self.user, let deviceToken = self.deviceToken else {
+            print("Kullanıcı veya device token bulunamadı")
+            return
+        }
+        
+        let urlString = "https://aryazilimdanismanlik.com/armedya/logout.php?user=\(user.username)&device_token=\(deviceToken)"
+        
+        guard let url = URL(string: urlString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)!) else {
+            print("Geçersiz URL")
+            return
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+
+        let task = URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                print("Çıkış hatası: \(error.localizedDescription)")
+                return
+            }
+            
+            guard let data = data else {
+                print("Geçersiz veri alındı")
+                return
+            }
+
+            if let json = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
+                if let success = json["success"] as? Bool, success {
+                    print("Device token başarıyla silindi")
+                } else {
+                    print("Silme başarısız: \(json["error"] ?? "Bilinmeyen hata")")
+                }
+            }
+        }
+        task.resume()
+
+        // Çıkış işlemleri
         self.isLoggedIn = false
         self.user = nil
-        
         offlineNewsManager.deleteAllSavedNews()
         clearUserSession()
     }
     
     private func saveUserSession(user: User) {
-            UserDefaults.standard.setValue(user.email, forKey: "email")
-            UserDefaults.standard.setValue(user.telefon, forKey: "telefon")
-            UserDefaults.standard.setValue(user.username, forKey: "username")
-            UserDefaults.standard.setValue(user.ad_soyad, forKey: "ad_soyad")
-            UserDefaults.standard.setValue(true, forKey: "isLoggedIn")
-        }
+        UserDefaults.standard.setValue(user.email, forKey: "email")
+        UserDefaults.standard.setValue(user.telefon, forKey: "telefon")
+        UserDefaults.standard.setValue(user.username, forKey: "username")
+        UserDefaults.standard.setValue(user.ad_soyad, forKey: "ad_soyad")
+        UserDefaults.standard.setValue(true, forKey: "isLoggedIn")
+    }
 
-        private func loadUserSession() {
-            let isLoggedIn = UserDefaults.standard.bool(forKey: "isLoggedIn")
-            if isLoggedIn {
-                let user = User(
-                    email: UserDefaults.standard.string(forKey: "email") ?? "",
-                    telefon: UserDefaults.standard.string(forKey: "telefon") ?? "",
-                    username: UserDefaults.standard.string(forKey: "username") ?? "",
-                    ad_soyad: UserDefaults.standard.string(forKey: "ad_soyad") ?? ""
-                )
-                self.user = user
-                self.isLoggedIn = true
-            }
+    private func loadUserSession() {
+        let isLoggedIn = UserDefaults.standard.bool(forKey: "isLoggedIn")
+        if isLoggedIn {
+            let user = User(
+                email: UserDefaults.standard.string(forKey: "email") ?? "",
+                telefon: UserDefaults.standard.string(forKey: "telefon") ?? "",
+                username: UserDefaults.standard.string(forKey: "username") ?? "",
+                ad_soyad: UserDefaults.standard.string(forKey: "ad_soyad") ?? ""
+            )
+            self.user = user
+            self.isLoggedIn = true
         }
+    }
 
-        private func clearUserSession() {
-            UserDefaults.standard.removeObject(forKey: "email")
-            UserDefaults.standard.removeObject(forKey: "telefon")
-            UserDefaults.standard.removeObject(forKey: "username")
-            UserDefaults.standard.removeObject(forKey: "ad_soyad")
-            UserDefaults.standard.setValue(false, forKey: "isLoggedIn")
-        }
+    private func clearUserSession() {
+        UserDefaults.standard.removeObject(forKey: "email")
+        UserDefaults.standard.removeObject(forKey: "telefon")
+        UserDefaults.standard.removeObject(forKey: "username")
+        UserDefaults.standard.removeObject(forKey: "ad_soyad")
+        UserDefaults.standard.setValue(false, forKey: "isLoggedIn")
+    }
 }
 
 struct User{
@@ -431,11 +467,11 @@ struct Profil: View {
     }
 } 
 
-struct Profil_Previews: PreviewProvider {
+/*struct Profil_Previews: PreviewProvider {
     static var previews: some View {
         Profil()
     }
-}
+}*/
 
 struct OtherFeatureView: View {
     var body: some View {
