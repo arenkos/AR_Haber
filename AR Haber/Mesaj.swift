@@ -48,6 +48,59 @@ struct Usr: Identifiable, Codable, Equatable {
     }
 }
 
+class ChatWebSocketService: ObservableObject {
+    private var webSocketTask: URLSessionWebSocketTask?
+    @Published var messages: [Message] = []
+    
+    func connect() {
+        let url = URL(string: "ws://www.aryazilimdanismanlik.com:8880")!
+        webSocketTask = URLSession.shared.webSocketTask(with: url)
+        webSocketTask?.resume()
+        receiveMessage()
+    }
+    
+    func sendMessage(_ text: String) {
+        let message = URLSessionWebSocketTask.Message.string(text)
+        webSocketTask?.send(message) { error in
+            if let error = error {
+                print("Mesaj gönderme hatası: \(error)")
+            }
+        }
+    }
+    
+    func receiveMessage() {
+        webSocketTask?.receive { [weak self] result in
+            switch result {
+            case .success(let message):
+                switch message {
+                case .string(let text):
+                    DispatchQueue.main.async {
+                        // Eğer gelen veri JSON ise çözümle
+                        let decoder = JSONDecoder()
+                        if let data = text.data(using: .utf8) {
+                            do {
+                                let decodedMessage = try decoder.decode(Message.self, from: data)
+                                self?.messages.append(decodedMessage)
+                            } catch {
+                                print("JSON çözümleme hatası: \(error)")
+                            }
+                        }
+                    }
+                default:
+                    break
+                }
+                self?.receiveMessage()
+            case .failure(let error):
+                print("Mesaj alma hatası: \(error)")
+            }
+        }
+    }
+    
+    func disconnect() {
+        webSocketTask?.cancel(with: .goingAway, reason: nil)
+    }
+}
+
 // Sohbet servisi
 class ChatService: ObservableObject {
     @EnvironmentObject var authViewModel: AuthViewModel
@@ -236,6 +289,7 @@ struct ChatListView: View {
 
 // Sohbet görünümü
 struct ChatView: View {
+    @StateObject private var chatServiceWebSocket = ChatWebSocketService()
     @EnvironmentObject var authViewModel: AuthViewModel
     @StateObject private var chatService = ChatService()
     @State private var messageText = ""
@@ -316,7 +370,9 @@ struct ChatView: View {
                 .onAppear {
                     get_device_token(user: receiverId)
                     chatService.fetchMessages(senderId: senderId, receiverId: receiverId)
+                    //chatServiceWebSocket.receiveMessage()
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        //chatServiceWebSocket.connect()
                         if let lastMessage = chatService.messages.first {
                             scrollView.scrollTo(lastMessage.id, anchor: .bottom)
                         }
@@ -325,6 +381,7 @@ struct ChatView: View {
                 .onDisappear {
                     // Görünüm kaybolduğunda observer'ı kaldır
                     NotificationCenter.default.removeObserver(self, name: NSNotification.Name("OpenChat"), object: nil)
+                    //chatServiceWebSocket.disconnect()
                 }
             }
 
