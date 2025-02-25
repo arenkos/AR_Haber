@@ -261,13 +261,19 @@ struct NewsItemView: View {
             // Kaynak Logosunu Gösterme
             HStack {
                 let kaynak = mapSource(news.kaynak)
-                AsyncImage(url: URL(string: "https://www.aryazilimdanismanlik.com/armedya/logo/" + kaynak + ".png")) { image in
+                Image(kaynak)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 50, height: 50)
+                    .padding(.trailing, 8)
+                /*
+                AsyncImage(url: URL(string: "https://www.aryazilimdanismanlik.com/armedya/logo/" + kaynak + ".png?v=\(Date().timeIntervalSince1970)")) { image in
                     image.resizable().scaledToFit()
                 } placeholder: {
                     ProgressView()
                 }
                 .frame(width: 50, height: 50)
-                .padding(.trailing, 8)
+                .padding(.trailing, 8)*/
             }
                 
             // Haber Görseli

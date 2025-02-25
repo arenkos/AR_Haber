@@ -50,6 +50,7 @@ struct Ozel_Akis: View {
         switch kaynak {
         case "A HABER": return "ahaber"
         case "CNN TÜRK": return "cnn"
+        case "CUMHURİYET": return "cumhuriyet"
         case "HABERTÜRK": return "haberturk"
         case "MİLLİYET": return "milliyet"
         case "NTV": return "ntv"

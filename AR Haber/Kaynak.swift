@@ -20,6 +20,7 @@ struct Kaynak: View {
         switch category {
         case "A HABER": return "ahaber"
         case "CNN TÜRK": return "cnn"
+        case "CUMHURİYET": return "cumhuriyet"
         case "HABERTÜRK": return "haberturk"
         case "MİLLİYET": return "milliyet"
         case "NTV": return "ntv"
@@ -39,13 +40,18 @@ struct Kaynak: View {
                     .progressViewStyle(CircularProgressViewStyle())
             } else {
                 List(kaynak, id: \.self) { category in
-                    HStack {
-                        AsyncImage(url: URL(string: "https://www.aryazilimdanismanlik.com/armedya/logo/" + mapSource(category: category) + ".png")) { image in
-                            image.resizable().scaledToFit()
-                                .frame(height:20)
+                    HStack {/*
+                        AsyncImage(url: URL(string: "https://www.aryazilimdanismanlik.com/armedya/logo/" + mapSource(category: category) + ".png?v=\(Date().timeIntervalSince1970)")) { image in
+                            image.resizable()
+                                .scaledToFit()
+                                .frame(height: 20)
                         } placeholder: {
                             ProgressView()
-                        }
+                        }*/
+                        Image(mapSource(category: category))
+                            .resizable()
+                            .scaledToFit()
+                            .frame(height: 20)
 
                         Spacer()
 
