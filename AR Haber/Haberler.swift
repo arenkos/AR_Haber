@@ -44,6 +44,7 @@ class NewsViewModel: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     private var currentPage = 0
     
+    
     func loadNews(resetPage: Bool = false, arama: String, isSearch: Bool = false) {
         guard hasMoreContent && !isLoading else { return }
         
@@ -255,6 +256,7 @@ struct NewsItemView: View {
     let onLike: () -> Void
     let onDislike: () -> Void
     let onComment: () -> Void
+    @State var resim = ""
     
     var body: some View {
         VStack(alignment: .center) {
@@ -277,15 +279,25 @@ struct NewsItemView: View {
             }
                 
             // Haber Görseli
-            AsyncImage(url: URL(string: news.resim_url)) { image in
-                image.resizable()
-                    .scaledToFill()
+            if let uiImage = UIImage(contentsOfFile: resim) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFit()
                     .frame(maxWidth: .infinity)
                     .clipShape(RoundedRectangle(cornerRadius: 10))
                 .onTapGesture(count: 1, perform: onTapGesture)
-                .onTapGesture(count: 2, perform: onDoubleTapGesture)
-            } placeholder: {
-                ProgressView()
+            } else {
+                Text("Resim Yükleniyor...")
+                /*
+                AsyncImage(url: URL(string: news.resim_url)) { image in
+                    image.resizable()
+                        .scaledToFill()
+                        .frame(maxWidth: .infinity)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .onTapGesture(count: 1, perform: onTapGesture)
+                } placeholder: {
+                    ProgressView()
+                }*/
             }
                                 
             // Başlık ve Tarih
@@ -343,6 +355,10 @@ struct NewsItemView: View {
                 .padding(.top, 5)
             }
         }
+        .onAppear {
+            get()
+            print(resim)
+        }
         .padding()
         .sheet(isPresented: $isChatListViewPresented) {
             if let user = authViewModel.user {
@@ -350,6 +366,79 @@ struct NewsItemView: View {
             }
         }
     }
+    func get() {
+        let webView = WKWebView()
+        guard let url = URL(string: news.haber_url), let imageURL = URL(string: news.resim_url) else { return }
+        
+        let request = URLRequest(url: url)
+        webView.load(request)
+        
+        DispatchQueue.main.asyncAfter(deadline: .now()) { // 5 saniye bekleyerek tam yüklenmesini sağlıyoruz
+            webView.takeSnapshot(with: nil) { image, error in
+                if let image = image {
+                    let fileURL = self.getDocumentsDirectory().appendingPathComponent("\(UUID().uuidString).webarchive")
+                    
+                    do {
+                        try image.pngData()?.write(to: fileURL)
+                        //print("Sayfa başarıyla kaydedildi: \(fileURL)")
+                        
+                        // Resmi indir ve kaydet
+                        self.downloadImage(from: imageURL) { savedImagePath in
+                            if let savedImagePath = savedImagePath {
+                                self.resim = savedImagePath
+                            }
+                        }
+                        
+                    } catch {
+                        print("WebArchive kaydedilirken hata oluştu: \(error)")
+                    }
+                }
+            }
+        }
+    }
+    
+    func downloadImage(from url: URL, completion: @escaping (String?) -> Void) {
+        let fileManager = FileManager.default
+        let destinationURL = getDocumentsDirectory().appendingPathComponent(url.lastPathComponent)
+        
+        // **Dosya zaten varsa direkt olarak path döndür**
+        if fileManager.fileExists(atPath: destinationURL.path) {
+            print("Dosya zaten var: \(destinationURL.path)")
+            completion(destinationURL.path)
+            return
+        }
+        
+        let task = URLSession.shared.downloadTask(with: url) { (location, response, error) in
+            guard let location = location, error == nil else {
+                print("Resim indirilirken hata oluştu: \(error?.localizedDescription ?? "Bilinmeyen hata")")
+                completion(nil)
+                return
+            }
+            
+            do {
+                try fileManager.moveItem(at: location, to: destinationURL)
+                
+                // Kaydedilen resmin varlığını kontrol et
+                if UIImage(contentsOfFile: destinationURL.path) != nil {
+                    print("Resim başarıyla kaydedildi: \(destinationURL.path)")
+                } else {
+                    print("Resim yüklenemedi.")
+                }
+                
+                completion(destinationURL.path) // Kaydedilen dosyanın yolunu döndür
+            } catch {
+                print("Resim kaydedilirken hata oluştu: \(error)")
+                completion(nil)
+            }
+        }
+        
+        task.resume()
+    }
+    
+    func getDocumentsDirectory() -> URL {
+        return FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+    }
+    
     // Mesaj gönderme arayüzünü açacak fonksiyon
     func showChatListView(url: String) {
         isChatListViewPresented = true

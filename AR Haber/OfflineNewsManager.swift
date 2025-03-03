@@ -64,7 +64,7 @@ class OfflineNewsManager: ObservableObject {
         let request = URLRequest(url: url)
         webView.load(request)
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) { // 5 saniye bekleyerek tam yüklenmesini sağlıyoruz
+        DispatchQueue.main.asyncAfter(deadline: .now()) { // 5 saniye bekleyerek tam yüklenmesini sağlıyoruz
             webView.takeSnapshot(with: nil) { image, error in
                 if let image = image {
                     let fileURL = self.getDocumentsDirectory().appendingPathComponent("\(UUID().uuidString).webarchive")
@@ -91,6 +91,16 @@ class OfflineNewsManager: ObservableObject {
 
     // Resim indirme fonksiyonu
     func downloadImage(from url: URL, completion: @escaping (String?) -> Void) {
+        let fileManager = FileManager.default
+        let destinationURL = getDocumentsDirectory().appendingPathComponent(url.lastPathComponent)
+        
+        // **Dosya zaten varsa direkt olarak path döndür**
+        if fileManager.fileExists(atPath: destinationURL.path) {
+            print("Dosya zaten var: \(destinationURL.path)")
+            completion(destinationURL.path)
+            return
+        }
+        
         let task = URLSession.shared.downloadTask(with: url) { (location, response, error) in
             guard let location = location, error == nil else {
                 print("Resim indirilirken hata oluştu: \(error?.localizedDescription ?? "Bilinmeyen hata")")
@@ -98,21 +108,17 @@ class OfflineNewsManager: ObservableObject {
                 return
             }
             
-            let fileManager = FileManager.default
-            let destinationURL = self.getDocumentsDirectory().appendingPathComponent(url.lastPathComponent)
-            
             do {
                 try fileManager.moveItem(at: location, to: destinationURL)
                 
-                // Resmi başarıyla kaydettiğimizde, burada resmin var olup olmadığını kontrol ediyoruz
-                if let image = UIImage(contentsOfFile: destinationURL.path) {
-                    // Görsel başarılı şekilde yüklendi
-                    print("Resim başarıyla yüklendi: \(destinationURL.path)")
+                // Kaydedilen resmin varlığını kontrol et
+                if UIImage(contentsOfFile: destinationURL.path) != nil {
+                    print("Resim başarıyla kaydedildi: \(destinationURL.path)")
                 } else {
                     print("Resim yüklenemedi.")
                 }
                 
-                completion(destinationURL.path) // Resmin kaydedildiği yolu döndürüyoruz
+                completion(destinationURL.path) // Kaydedilen dosyanın yolunu döndür
             } catch {
                 print("Resim kaydedilirken hata oluştu: \(error)")
                 completion(nil)
@@ -252,6 +258,38 @@ class OfflineNewsManager: ObservableObject {
     
     func get(kaynak: String, haber_url: String, resim_url: String, baslik: String, tarih: String) {
         //self.offlineNewsList.append(OfflineNews(kaynak: kaynak, resim_url: resim_url, baslik: baslik, tarih: tarih, haber_url: haber_url))
+        
+        let webView = WKWebView()
+        guard let url = URL(string: haber_url), let imageURL = URL(string: resim_url) else { return }
+        print("save basıldı")
+        
+        let request = URLRequest(url: url)
+        webView.load(request)
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { // 5 saniye bekleyerek tam yüklenmesini sağlıyoruz
+            webView.takeSnapshot(with: nil) { image, error in
+                if let image = image {
+                    let fileURL = self.getDocumentsDirectory().appendingPathComponent("\(UUID().uuidString).webarchive")
+                    
+                    do {
+                        try image.pngData()?.write(to: fileURL)
+                        print("Sayfa başarıyla kaydedildi: \(fileURL)")
+                        
+                        // Resmi indir ve kaydet
+                        self.downloadImage(from: imageURL) { savedImagePath in
+                            if let savedImagePath = savedImagePath {
+                                let offlineNews = OfflineNews(kaynak: kaynak, resim_url: savedImagePath, baslik: baslik, tarih: tarih, haber_url: haber_url)
+                                self.saveNews(offlineNews)
+                            }
+                        }
+                        
+                    } catch {
+                        print("WebArchive kaydedilirken hata oluştu: \(error)")
+                    }
+                }
+            }
+        }
+        /*
         let offlineNews = OfflineNews(
             kaynak: kaynak,
             resim_url: resim_url,
@@ -259,7 +297,7 @@ class OfflineNewsManager: ObservableObject {
             tarih: tarih,
             haber_url: haber_url // PDF dosyasının yolu
         )
-        self.saveNews(offlineNews)
+        self.saveNews(offlineNews)*/
     }
 
     // 📌 Belgeler dizinini almak için yardımcı fonksiyon
@@ -291,6 +329,7 @@ struct OfflineNewsListView: View {
     @ObservedObject var offlineNewsManager = OfflineNewsManager.shared
     @State private var isActive: Bool = false
     @State public var haber: String
+    @State var resim = ""
     
     
     var filteredNews: [OfflineNews] {
@@ -298,6 +337,22 @@ struct OfflineNewsListView: View {
             return offlineNewsManager.offlineNewsList
         } else {
             return offlineNewsManager.offlineNewsList.filter { $0.baslik.localizedCaseInsensitiveContains(searchText) }
+        }
+    }
+    func mapSource(kaynak: String) -> String {
+        switch kaynak {
+        case "A HABER": return "ahaber"
+        case "CNN TÜRK": return "cnn"
+        case "CUMHURİYET": return "cumhuriyet"
+        case "HABERTÜRK": return "haberturk"
+        case "MİLLİYET": return "milliyet"
+        case "NTV": return "ntv"
+        case "SABAH": return "sabah"
+        case "SHIFTDELETE.NET": return "sdn"
+        case "SÖZCÜ": return "sozcu"
+        case "TRT HABER": return "trt"
+        case "WEBTEKNO": return "webtekno"
+        default: return "default_logo"
         }
     }
     var body: some View {
@@ -313,18 +368,29 @@ struct OfflineNewsListView: View {
                 List(filteredNews) { news in
                     VStack(alignment: .center) {
                         
-                        Text(news.kaynak)
-                            .font(.headline)
-                            .frame(maxWidth: .infinity, alignment: .center)
+                        Image(mapSource(kaynak:news.kaynak))
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 50, height: 50)
+                            .padding(.trailing, 8)
                         
-                        AsyncImage(url: URL(string: news.resim_url)) { image in
-                            image.resizable()
-                                .scaledToFill()
+                        if let uiImage = UIImage(contentsOfFile: resim) {
+                            Image(uiImage: uiImage)
+                                .resizable()
+                                .scaledToFit()
                                 .frame(maxWidth: .infinity)
                                 .clipShape(RoundedRectangle(cornerRadius: 10))
                             .onTapGesture(count: 1, perform: onTapGesture)
-                        } placeholder: {
-                            //ProgressView()
+                        } else {
+                            AsyncImage(url: URL(string: resim)) { image in
+                                image.resizable()
+                                    .scaledToFill()
+                                    .frame(maxWidth: .infinity)
+                                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                                .onTapGesture(count: 1, perform: onTapGesture)
+                            } placeholder: {
+                                ProgressView()
+                            }
                         }
                         
                         Text(news.baslik)
@@ -351,6 +417,7 @@ struct OfflineNewsListView: View {
                 // Uygulama açıldığında haberleri yükle
                 //offlineNewsManager.deleteAllSavedNews()
                 offlineNewsManager.loadSavedNews()
+                get()
                 haber = filteredNews.first?.haber_url ?? ""
             }
             .refreshable {
@@ -361,6 +428,79 @@ struct OfflineNewsListView: View {
     }
     func onTapGesture(){
         self.isActive.toggle()
+    }
+    
+    func get() {
+        let webView = WKWebView()
+        guard let url = URL(string: filteredNews.first?.haber_url ?? ""), let imageURL = URL(string: filteredNews.first?.resim_url ?? "") else { return }
+        
+        let request = URLRequest(url: url)
+        webView.load(request)
+        
+        DispatchQueue.main.asyncAfter(deadline: .now()) { // 5 saniye bekleyerek tam yüklenmesini sağlıyoruz
+            webView.takeSnapshot(with: nil) { image, error in
+                if let image = image {
+                    let fileURL = self.getDocumentsDirectory().appendingPathComponent("\(UUID().uuidString).webarchive")
+                    
+                    do {
+                        try image.pngData()?.write(to: fileURL)
+                        //print("Sayfa başarıyla kaydedildi: \(fileURL)")
+                        
+                        // Resmi indir ve kaydet
+                        self.downloadImage(from: imageURL) { savedImagePath in
+                            if let savedImagePath = savedImagePath {
+                                self.resim = savedImagePath
+                            }
+                        }
+                        
+                    } catch {
+                        print("WebArchive kaydedilirken hata oluştu: \(error)")
+                    }
+                }
+            }
+        }
+    }
+    
+    func downloadImage(from url: URL, completion: @escaping (String?) -> Void) {
+        let fileManager = FileManager.default
+        let destinationURL = getDocumentsDirectory().appendingPathComponent(url.lastPathComponent)
+        
+        // **Dosya zaten varsa direkt olarak path döndür**
+        if fileManager.fileExists(atPath: destinationURL.path) {
+            print("Dosya zaten var: \(destinationURL.path)")
+            completion(destinationURL.path)
+            return
+        }
+        
+        let task = URLSession.shared.downloadTask(with: url) { (location, response, error) in
+            guard let location = location, error == nil else {
+                print("Resim indirilirken hata oluştu: \(error?.localizedDescription ?? "Bilinmeyen hata")")
+                completion(nil)
+                return
+            }
+            
+            do {
+                try fileManager.moveItem(at: location, to: destinationURL)
+                
+                // Kaydedilen resmin varlığını kontrol et
+                if UIImage(contentsOfFile: destinationURL.path) != nil {
+                    print("Resim başarıyla kaydedildi: \(destinationURL.path)")
+                } else {
+                    print("Resim yüklenemedi.")
+                }
+                
+                completion(destinationURL.path) // Kaydedilen dosyanın yolunu döndür
+            } catch {
+                print("Resim kaydedilirken hata oluştu: \(error)")
+                completion(nil)
+            }
+        }
+        
+        task.resume()
+    }
+    
+    func getDocumentsDirectory() -> URL {
+        return FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
     }
 }
 
