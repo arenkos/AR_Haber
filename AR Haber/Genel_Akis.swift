@@ -95,7 +95,10 @@ struct Genel_Akis: View {
                     isDisliked: { newsID in
                         dislikedNewsIDs.contains(newsID) // Kullanıcının beğenmediği haberlerin kontrolü
                     },
-                    onComment: { showCommentsView.toggle() },
+                    onComment: { news in
+                        selectedNewsManager.selectedNews = news
+                        showCommentsView.toggle()
+                    },
                     onLoadMore: {
                         if !viewModel.isLoading {
                             loadUserReactions()
@@ -135,7 +138,7 @@ struct Genel_Akis: View {
             .sheet(isPresented: $showCommentsView) {
                 if let selectedNews = selectedNewsManager.selectedNews,
                    let user = authViewModel.user {
-                    WebViewContainer(urlString: "https://www.aryazilimdanismanlik.com/armedya/yorumlar.php?id=\(selectedNews.id)&username=\(user.username)") {
+                    WebViewContainer(urlString: "https://www.aryazilimdanismanlik.com/armedya/yorumlar_mobil.php?id=\(selectedNews.id)&username=\(user.username)") {
                         showCommentsView = false
                     }
                     .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height-100) // Tam ekran genişlik

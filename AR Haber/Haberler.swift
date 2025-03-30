@@ -195,7 +195,7 @@ struct NewsListView: View {
     let onReaction: (Int, Bool) -> Void
     let isLiked: (Int) -> Bool
     let isDisliked: (Int) -> Bool
-    let onComment: () -> Void
+    let onComment: (NewsItem) -> Void
     let onLoadMore: () -> Void
     
     var body: some View {
@@ -211,7 +211,7 @@ struct NewsListView: View {
                         isDisliked: isDisliked(newsItem.id),
                         onLike: { onReaction(newsItem.id, true) },
                         onDislike: { onReaction(newsItem.id, false) },
-                        onComment: onComment
+                        onComment: { _ in onComment(newsItem) }
                     )
                     /*NewsItemView(
                         news: newsItem,
@@ -255,7 +255,7 @@ struct NewsItemView: View {
     let isDisliked: Bool
     let onLike: () -> Void
     let onDislike: () -> Void
-    let onComment: () -> Void
+    let onComment: (NewsItem) -> Void
     @State var resim = ""
     
     var body: some View {
@@ -323,7 +323,7 @@ struct NewsItemView: View {
                             .foregroundColor(isDisliked ? .red : .gray)
                     }
                     
-                    Button(action: onComment) {
+                    Button(action: { onComment(news) }) {
                         Image(systemName: "bubble.left.and.bubble.right.fill")
                             .foregroundColor(.gray)
                     }

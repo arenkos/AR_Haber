@@ -101,7 +101,10 @@ struct LikesView: View {
                     isDisliked: { newsID in
                         dislikedNewsIDs.contains(newsID) // Kullanıcının beğenmediği haberlerin kontrolü
                     },
-                    onComment: { showCommentsView.toggle() },
+                    onComment: { news in
+                        selectedNewsManager.selectedNews = news
+                        showCommentsView.toggle()
+                    },
                     onLoadMore: {
                         if !viewModel.isLoading {
                             loadUserReactions()
