@@ -59,7 +59,7 @@ class AuthViewModel: ObservableObject {
             print("Cihaz Token'ı bulunamadı.")
             return
         }
-        
+        print(deviceToken)
         let hashedpassword = sha256(password)
         let parameters: [String: String] = [
             "username": username,
@@ -90,12 +90,23 @@ class AuthViewModel: ObservableObject {
                 }
 
                 // Sunucudan gelen cevabı ekrana yazdır (debug için)
-                if let jsonString = String(data: data, encoding: .utf8) {
-                    print("Sunucu Yanıtı: \(jsonString)")
+                var cleanedData = data
+                if let responseString = String(data: data, encoding: .utf8) {
+                    print("Sunucu Yanıtı (Ham): \(responseString)")
+                    
+                    // JSON'un başlangıcını bul ('{' karakteri)
+                    if let jsonStartIndex = responseString.firstIndex(of: "{") {
+                        let cleanedString = String(responseString[jsonStartIndex...])
+                        print("Temizlenmiş Yanıt: \(cleanedString)")
+                        
+                        if let cleanedDataFromString = cleanedString.data(using: .utf8) {
+                            cleanedData = cleanedDataFromString
+                        }
+                    }
                 }
 
                 do {
-                    if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
+                    if let json = try JSONSerialization.jsonObject(with: cleanedData, options: []) as? [String: Any] {
                         if let status = json["status"] as? String, status == "success" {
                             let email = json["mail"] as? String ?? ""
                             let ad_soyad = json["ad_soyad"] as? String ?? ""
@@ -118,6 +129,7 @@ class AuthViewModel: ObservableObject {
                     }
                 } catch {
                     self.errorMessage = "JSON çözme hatası: \(error.localizedDescription)"
+                    print("JSON Parse Hatası: \(error)")
                 }
             }
         }.resume()
