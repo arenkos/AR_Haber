@@ -43,6 +43,351 @@ class NewsViewModel: ObservableObject {
     
     private var cancellables = Set<AnyCancellable>()
     private var currentPage = 0
+    // ... (Properties: news, isLoading, hasMoreContent, cancellables, currentPage) ...
+
+    // --- Helper Functions (downloadImage, getDocumentsDirectory, deleteAllSavedNews) remain the same ---
+    func getDocumentsDirectory() -> URL {
+        return FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+    }
+
+    func downloadImage(from url: URL, completion: @escaping (String?) -> Void) {
+        let fileManager = FileManager.default
+        let destinationURL = getDocumentsDirectory().appendingPathComponent(url.lastPathComponent)
+
+        if fileManager.fileExists(atPath: destinationURL.path) {
+            print("Image already exists: \(destinationURL.path)")
+            completion(destinationURL.path)
+            return
+        }
+
+        let task = URLSession.shared.downloadTask(with: url) { (location, response, error) in
+            guard let location = location, error == nil else {
+                print("Error downloading image \(url.absoluteString): \(error?.localizedDescription ?? "Unknown error")")
+                completion(nil)
+                return
+            }
+
+            do {
+                if fileManager.fileExists(atPath: destinationURL.path) {
+                    try fileManager.removeItem(at: destinationURL)
+                }
+                try fileManager.moveItem(at: location, to: destinationURL)
+
+                if UIImage(contentsOfFile: destinationURL.path) != nil {
+                     print("Image successfully saved: \(destinationURL.path)")
+                } else {
+                     print("Image file saved but couldn't be loaded at: \(destinationURL.path)")
+                }
+
+                completion(destinationURL.path)
+            } catch {
+                 if let nsError = error as NSError?, nsError.domain == NSCocoaErrorDomain, nsError.code == NSFileWriteFileExistsError {
+                     print("Image file likely already moved (fileExistsError): \(destinationURL.path)")
+                     completion(destinationURL.path)
+                 } else {
+                     print("Error saving image to \(destinationURL.path): \(error)")
+                     completion(nil)
+                 }
+            }
+        }
+        task.resume()
+    }
+
+     func deleteAllSavedNews() {
+         let fileManager = FileManager.default
+         let documentsDirectory = getDocumentsDirectory()
+         
+         do {
+             let fileURLs = try fileManager.contentsOfDirectory(at: documentsDirectory, includingPropertiesForKeys: nil)
+             let deletableExtensions = ["png", "jpg", "jpeg", "gif", "webp", "webarchive", "pdf", ""]
+             
+             for fileURL in fileURLs {
+                 if deletableExtensions.contains(fileURL.pathExtension.lowercased()) {
+                     try fileManager.removeItem(at: fileURL)
+                      print("Deleted: \(fileURL.lastPathComponent)")
+                 }
+             }
+             print("All cached news images/files deleted.")
+         } catch {
+             print("Error deleting cached files: \(error)")
+         }
+     }
+
+    // --- Modified Loading Functions ---
+
+    func loadNews(resetPage: Bool = false, arama: String, isSearch: Bool = false) {
+        // ... (guard conditions, reset logic, URL setup remain the same) ...
+        guard !isLoading else { return }
+        guard hasMoreContent || resetPage else {
+             print("LoadNews: Already loading or no more content and not resetting.")
+             return
+         }
+
+        if resetPage {
+            currentPage = 0
+            news.removeAll()
+            hasMoreContent = true
+        }
+
+        isLoading = true
+
+        var components = URLComponents(string: "https://www.aryazilimdanismanlik.com/armedya/haberler_mobil.php")
+        components?.queryItems = [
+            URLQueryItem(name: "arama", value: arama),
+            URLQueryItem(name: "carpan", value: String(currentPage))
+        ]
+
+        guard let url = components?.url else {
+            print("Invalid URL components.")
+            isLoading = false
+            return
+        }
+
+        print("Loading News URL: \(url.absoluteString)")
+
+        URLSession.shared.dataTaskPublisher(for: url)
+            .map(\.data)
+            .decode(type: [NewsItem].self, decoder: JSONDecoder())
+            .receive(on: DispatchQueue.main)
+            .sink(receiveCompletion: { [weak self] completion in
+                self?.isLoading = false
+                if case let .failure(error) = completion {
+                    print("Error fetching news: \(error.localizedDescription)")
+                }
+            }, receiveValue: { [weak self] fetchedNewsItems in
+                guard let self = self else { return }
+
+                if fetchedNewsItems.isEmpty {
+                    self.hasMoreContent = false
+                    print("No more news items received.")
+                    return
+                }
+
+                let startIndex = self.news.count
+                self.news.append(contentsOf: fetchedNewsItems)
+                self.currentPage += 1
+
+                // --- Download Images Logic ---
+                for i in startIndex..<self.news.count {
+                    let item = self.news[i]
+                    // Directly use item.resim_url since it's not optional
+                    let originalUrlString = item.resim_url
+
+                    // Still need to validate if the string forms a proper URL
+                    guard let imageUrl = URL(string: originalUrlString) else {
+                        print("Item \(item.id) has invalid image URL string: \(originalUrlString)")
+                        continue // Skip if the string is not a valid URL format
+                    }
+
+                    // Avoid re-downloading if it's already a local path (heuristic check)
+                    if !originalUrlString.starts(with: "http") && originalUrlString.contains("/") {
+                         print("Item \(item.id) already appears to have a local path: \(originalUrlString)")
+                         continue
+                    }
+
+                    // Start download - ADD [weak self] to capture list
+                    self.downloadImage(from: imageUrl) { [weak self] localPath in
+                        // Ensure update happens on the main thread
+                        DispatchQueue.main.async {
+                            // Correctly unwrap self and path
+                            guard let self = self, let path = localPath else { return }
+
+                            // Find the item again using its Int ID
+                            if let indexToUpdate = self.news.firstIndex(where: { $0.id == item.id }) {
+                                // Update the resim_url property
+                                self.news[indexToUpdate].resim_url = path
+                                // print("Updated image path for item \(item.id) to: \(path)")
+                            } else {
+                                 print("Could not find item \(item.id) to update path after download.")
+                            }
+                        }
+                    } // End downloadImage closure
+                } // End loop
+                // --- End Image Download ---
+            })
+            .store(in: &cancellables)
+    }
+
+    func loadfilteredNews(resetPage: Bool = false, arama: String, kaynak: String, kategori: String, isSearch: Bool = false) {
+        // ... (guard conditions, reset logic, URL setup remain the same) ...
+        guard !isLoading else { return }
+        guard hasMoreContent || resetPage else {
+             print("loadfilteredNews: Already loading or no more content and not resetting.")
+             return
+         }
+
+        if resetPage {
+            currentPage = 0
+            news.removeAll()
+            hasMoreContent = true
+        }
+
+        isLoading = true
+
+        var components = URLComponents(string: "https://www.aryazilimdanismanlik.com/armedya/haberler_mobil.php")
+        components?.queryItems = [
+            URLQueryItem(name: "arama", value: arama),
+            URLQueryItem(name: "carpan", value: String(currentPage)),
+            URLQueryItem(name: "kaynak", value: kaynak),
+            URLQueryItem(name: "kategori", value: kategori)
+        ]
+
+        guard let url = components?.url else {
+            print("Invalid URL components for filtered news.")
+            isLoading = false
+            return
+        }
+
+        print("Loading Filtered News URL: \(url.absoluteString)")
+
+        URLSession.shared.dataTaskPublisher(for: url)
+            .map(\.data)
+            .decode(type: [NewsItem].self, decoder: JSONDecoder())
+            .receive(on: DispatchQueue.main)
+            .sink(receiveCompletion: { [weak self] completion in
+                self?.isLoading = false
+                if case let .failure(error) = completion {
+                    print("Error fetching filtered news: \(error.localizedDescription)")
+                }
+            }, receiveValue: { [weak self] fetchedNewsItems in
+                guard let self = self else { return }
+
+                if fetchedNewsItems.isEmpty {
+                    self.hasMoreContent = false
+                    print("No more filtered news items received.")
+                    return
+                }
+
+                let startIndex = self.news.count
+                self.news.append(contentsOf: fetchedNewsItems)
+                self.currentPage += 1
+
+                // --- Download Images Logic (Identical modification as in loadNews) ---
+                for i in startIndex..<self.news.count {
+                    let item = self.news[i]
+                    let originalUrlString = item.resim_url // Use directly
+
+                    guard let imageUrl = URL(string: originalUrlString) else {
+                        print("Item \(item.id) has invalid image URL string: \(originalUrlString)")
+                        continue
+                    }
+                    if !originalUrlString.starts(with: "http") && originalUrlString.contains("/") {
+                        print("Item \(item.id) already appears to have a local path: \(originalUrlString)")
+                        continue
+                    }
+
+                    // ADD [weak self] to capture list
+                    self.downloadImage(from: imageUrl) { [weak self] localPath in
+                         DispatchQueue.main.async {
+                             guard let self = self, let path = localPath else { return }
+                             if let indexToUpdate = self.news.firstIndex(where: { $0.id == item.id }) {
+                                 self.news[indexToUpdate].resim_url = path
+                             } else {
+                                 print("Could not find item \(item.id) to update path after download.")
+                             }
+                         }
+                     } // End downloadImage closure
+                 } // End loop
+                // --- End Image Download ---
+            })
+            .store(in: &cancellables)
+    }
+
+    func loadlikedNews(resetPage: Bool = false, arama: String, isSearch: Bool = false, username: String) {
+        // ... (guard conditions, reset logic, URL setup remain the same) ...
+        guard !isLoading else { return }
+        guard hasMoreContent || resetPage else {
+            print("loadlikedNews: Already loading or no more content and not resetting.")
+            return
+        }
+
+        if resetPage {
+            currentPage = 0
+            news.removeAll()
+            hasMoreContent = true
+        }
+
+        isLoading = true
+
+        var components = URLComponents(string: "https://www.aryazilimdanismanlik.com/armedya/begenilen_haberler_mobil.php")
+        components?.queryItems = [
+            URLQueryItem(name: "arama", value: arama),
+            URLQueryItem(name: "carpan", value: String(currentPage)),
+            URLQueryItem(name: "user", value: username)
+        ]
+
+        guard let url = components?.url else {
+            print("Invalid URL components for liked news.")
+            isLoading = false
+            return
+        }
+
+        print("Loading Liked News URL: \(url.absoluteString)")
+
+        URLSession.shared.dataTaskPublisher(for: url)
+            .map(\.data)
+            .decode(type: [NewsItem].self, decoder: JSONDecoder())
+            .receive(on: DispatchQueue.main)
+            .sink(receiveCompletion: { [weak self] completion in
+                self?.isLoading = false
+                if case let .failure(error) = completion {
+                    print("Error fetching liked news: \(error.localizedDescription)")
+                }
+            }, receiveValue: { [weak self] fetchedNewsItems in
+                guard let self = self else { return }
+
+                if fetchedNewsItems.isEmpty {
+                    self.hasMoreContent = false
+                    print("No more liked news items received.")
+                    return
+                }
+
+                let startIndex = self.news.count
+                self.news.append(contentsOf: fetchedNewsItems)
+                self.currentPage += 1
+
+                // --- Download Images Logic (Identical modification as in loadNews) ---
+                 for i in startIndex..<self.news.count {
+                     let item = self.news[i]
+                     let originalUrlString = item.resim_url // Use directly
+
+                     guard let imageUrl = URL(string: originalUrlString) else {
+                         print("Item \(item.id) has invalid image URL string: \(originalUrlString)")
+                         continue
+                     }
+                    if !originalUrlString.starts(with: "http") && originalUrlString.contains("/") {
+                        print("Item \(item.id) already appears to have a local path: \(originalUrlString)")
+                        continue
+                    }
+
+                     // ADD [weak self] to capture list
+                     self.downloadImage(from: imageUrl) { [weak self] localPath in
+                         DispatchQueue.main.async {
+                             guard let self = self, let path = localPath else { return }
+                             if let indexToUpdate = self.news.firstIndex(where: { $0.id == item.id }) {
+                                 self.news[indexToUpdate].resim_url = path
+                             } else {
+                                 print("Could not find item \(item.id) to update path after download.")
+                             }
+                         }
+                     } // End downloadImage closure
+                 } // End loop
+                // --- End Image Download ---
+            })
+            .store(in: &cancellables)
+    }
+
+    // Make sure the get() function is completely removed if it exists elsewhere in the file.
+}
+
+class NewsViewModel_eski: ObservableObject {
+    @EnvironmentObject var authViewModel: AuthViewModel
+    @Published var news: [NewsItem] = []
+    @Published var isLoading = false
+    @Published var hasMoreContent = true
+    
+    private var cancellables = Set<AnyCancellable>()
+    private var currentPage = 0
     
     
     func loadNews(resetPage: Bool = false, arama: String, isSearch: Bool = false) {
@@ -223,14 +568,14 @@ struct NewsListView: View {
                             onLoadMore()
                         }
                     }
-                    
+                    /*
                     if (index + 1) % 4 == 0 {
                         Text("-Sponsorlu Bağlantı-")
                             .frame(maxWidth: .infinity, alignment: .center)
                         AdBannerView()
                             .frame(maxWidth: .infinity, minHeight: 200, maxHeight: 200) // Genişlik esnek, yükseklik sabit
                             .padding(.horizontal, 10) // Sağdan ve soldan 10 birim boşluk bırak
-                    }
+                    }*/
                 }
             }
             
@@ -240,7 +585,6 @@ struct NewsListView: View {
             }
         }
     }
-    
 }
 
 struct NewsItemView: View {
@@ -279,7 +623,7 @@ struct NewsItemView: View {
             }
                 
             // Haber Görseli
-            if let uiImage = UIImage(contentsOfFile: resim) {
+            if let uiImage = UIImage(contentsOfFile: news.resim_url) {
                 Image(uiImage: uiImage)
                     .resizable()
                     .scaledToFit()
@@ -287,8 +631,7 @@ struct NewsItemView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 10))
                 .onTapGesture(count: 1, perform: onTapGesture)
             } else {
-                Text("Resim Yükleniyor...")
-                /*
+                
                 AsyncImage(url: URL(string: news.resim_url)) { image in
                     image.resizable()
                         .scaledToFill()
@@ -297,7 +640,8 @@ struct NewsItemView: View {
                     .onTapGesture(count: 1, perform: onTapGesture)
                 } placeholder: {
                     ProgressView()
-                }*/
+                    Text("Resim Yükleniyor...")
+                }
             }
                                 
             // Başlık ve Tarih
@@ -356,8 +700,9 @@ struct NewsItemView: View {
             }
         }
         .onAppear {
-            get()
-            print(resim)
+            //deleteAllSavedNews()
+            //get(resim_url: news.resim_url, haber_url: news.haber_url)
+            //print("resim:" + resim)
         }
         .padding()
         .sheet(isPresented: $isChatListViewPresented) {
@@ -366,9 +711,9 @@ struct NewsItemView: View {
             }
         }
     }
-    func get() {
+    func get(resim_url: String, haber_url: String) {
         let webView = WKWebView()
-        guard let url = URL(string: news.haber_url), let imageURL = URL(string: news.resim_url) else { return }
+        guard let url = URL(string: haber_url), let imageURL = URL(string: resim_url) else { return }
         
         let request = URLRequest(url: url)
         webView.load(request)
@@ -386,6 +731,7 @@ struct NewsItemView: View {
                         self.downloadImage(from: imageURL) { savedImagePath in
                             if let savedImagePath = savedImagePath {
                                 self.resim = savedImagePath
+                                print(resim)
                             }
                         }
                         
@@ -396,6 +742,25 @@ struct NewsItemView: View {
             }
         }
     }
+    func deleteAllSavedNews() {
+        let fileManager = FileManager.default
+        let documentsDirectory = getDocumentsDirectory()
+        
+        do {
+            let fileURLs = try fileManager.contentsOfDirectory(at: documentsDirectory, includingPropertiesForKeys: nil)
+            
+            // .webarchive ve resim dosyalarını sil
+            for fileURL in fileURLs {
+                if fileURL.pathExtension == "" || fileURL.pathExtension == "webarchive" || fileURL.pathExtension == "pdf" || fileURL.pathExtension == "jpg" || fileURL.pathExtension == "png" || fileURL.pathExtension == "jpeg" {
+                    try fileManager.removeItem(at: fileURL)
+                }
+            }
+            
+            print("Tüm indirilen haberler ve resimler silindi.")
+        } catch {
+            print("Haberleri silerken hata oluştu: \(error)")
+        }
+    }
     
     func downloadImage(from url: URL, completion: @escaping (String?) -> Void) {
         let fileManager = FileManager.default
@@ -403,6 +768,7 @@ struct NewsItemView: View {
         
         // **Dosya zaten varsa direkt olarak path döndür**
         if fileManager.fileExists(atPath: destinationURL.path) {
+            print(url)
             print("Dosya zaten var: \(destinationURL.path)")
             completion(destinationURL.path)
             return
