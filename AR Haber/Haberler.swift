@@ -568,14 +568,14 @@ struct NewsListView: View {
                             onLoadMore()
                         }
                     }
-                    /*
+                    
                     if (index + 1) % 4 == 0 {
                         Text("-Sponsorlu Bağlantı-")
                             .frame(maxWidth: .infinity, alignment: .center)
                         AdBannerView()
                             .frame(maxWidth: .infinity, minHeight: 200, maxHeight: 200) // Genişlik esnek, yükseklik sabit
                             .padding(.horizontal, 10) // Sağdan ve soldan 10 birim boşluk bırak
-                    }*/
+                    }
                 }
             }
             
