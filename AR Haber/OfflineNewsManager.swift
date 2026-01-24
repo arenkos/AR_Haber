@@ -257,47 +257,89 @@ class OfflineNewsManager: ObservableObject {
     }
     
     func get(kaynak: String, haber_url: String, resim_url: String, baslik: String, tarih: String) {
-        //self.offlineNewsList.append(OfflineNews(kaynak: kaynak, resim_url: resim_url, baslik: baslik, tarih: tarih, haber_url: haber_url))
-        
         let webView = WKWebView()
         guard let url = URL(string: haber_url), let imageURL = URL(string: resim_url) else { return }
-        print("save basıldı")
+        print("📥 Haber kaydediliyor...")
         
         let request = URLRequest(url: url)
         webView.load(request)
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { // 5 saniye bekleyerek tam yüklenmesini sağlıyoruz
-            webView.takeSnapshot(with: nil) { image, error in
-                if let image = image {
-                    let fileURL = self.getDocumentsDirectory().appendingPathComponent("\(UUID().uuidString).webarchive")
-                    
-                    do {
-                        try image.pngData()?.write(to: fileURL)
-                        print("Sayfa başarıyla kaydedildi: \(fileURL)")
+        // Önce özeti indir
+        downloadSummary(for: haber_url) { [weak self] summary in
+            guard let self = self else { return }
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                webView.takeSnapshot(with: nil) { image, error in
+                    if let image = image {
+                        let fileURL = self.getDocumentsDirectory().appendingPathComponent("\(UUID().uuidString).webarchive")
                         
-                        // Resmi indir ve kaydet
-                        self.downloadImage(from: imageURL) { savedImagePath in
-                            if let savedImagePath = savedImagePath {
-                                let offlineNews = OfflineNews(kaynak: kaynak, resim_url: savedImagePath, baslik: baslik, tarih: tarih, haber_url: haber_url)
-                                self.saveNews(offlineNews)
+                        do {
+                            try image.pngData()?.write(to: fileURL)
+                            print("✅ Sayfa başarıyla kaydedildi: \(fileURL)")
+                            
+                            // Resmi indir ve kaydet
+                            self.downloadImage(from: imageURL) { savedImagePath in
+                                if let savedImagePath = savedImagePath {
+                                    let offlineNews = OfflineNews(
+                                        kaynak: kaynak,
+                                        resim_url: savedImagePath,
+                                        baslik: baslik,
+                                        tarih: tarih,
+                                        haber_url: haber_url,
+                                        ozet: summary // Özet de kaydediliyor
+                                    )
+                                    self.saveNews(offlineNews)
+                                    print("✅ Haber özeti ile birlikte kaydedildi!")
+                                }
                             }
+                            
+                        } catch {
+                            print("❌ WebArchive kaydedilirken hata oluştu: \(error)")
                         }
-                        
-                    } catch {
-                        print("WebArchive kaydedilirken hata oluştu: \(error)")
                     }
                 }
             }
         }
-        /*
-        let offlineNews = OfflineNews(
-            kaynak: kaynak,
-            resim_url: resim_url,
-            baslik: baslik,
-            tarih: tarih,
-            haber_url: haber_url // PDF dosyasının yolu
-        )
-        self.saveNews(offlineNews)*/
+    }
+    
+    // MARK: - Özet İndirme Fonksiyonu
+    func downloadSummary(for haberURL: String, completion: @escaping (String?) -> Void) {
+        guard let encodedURL = haberURL.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+              let url = URL(string: "https://www.aryazilimdanismanlik.com/armedya/ozet_olustur.php?haber_url=\(encodedURL)") else {
+            print("❌ Özet URL'si oluşturulamadı")
+            completion(nil)
+            return
+        }
+        
+        print("📥 Özet indiriliyor: \(url.absoluteString)")
+        
+        URLSession.shared.dataTask(with: url) { data, response, error in
+            guard let data = data, error == nil else {
+                print("❌ Özet indirme hatası: \(error?.localizedDescription ?? "Bilinmeyen")")
+                completion(nil)
+                return
+            }
+            
+            // Debug: Response'u yazdır
+            if let responseString = String(data: data, encoding: .utf8) {
+                print("📝 Özet API Response (ilk 200 karakter): \(String(responseString.prefix(200)))")
+            }
+            
+            do {
+                let summaryResponse = try JSONDecoder().decode(SummaryResponse.self, from: data)
+                
+                if summaryResponse.success, let summaryData = summaryResponse.data {
+                    print("✅ Özet başarıyla indirildi!")
+                    completion(summaryData.ozet)
+                } else {
+                    print("⚠️ Özet oluşturulamadı: \(summaryResponse.error ?? "Bilinmeyen")")
+                    completion(nil)
+                }
+            } catch {
+                print("❌ Özet JSON decode hatası: \(error)")
+                completion(nil)
+            }
+        }.resume()
     }
 
     // 📌 Belgeler dizinini almak için yardımcı fonksiyon
@@ -322,12 +364,19 @@ struct OfflineNews: Identifiable, Decodable, Encodable {
     let baslik: String
     let tarih: String
     let haber_url: String
+    var ozet: String? // Özet alanı eklendi
+    
+    enum CodingKeys: String, CodingKey {
+        case kaynak, resim_url, baslik, tarih, haber_url, ozet
+    }
 }
 
 struct OfflineNewsListView: View {
     @State private var searchText = ""
     @ObservedObject var offlineNewsManager = OfflineNewsManager.shared
     @State private var isActive: Bool = false
+    @State private var showSummaryView = false
+    @State private var selectedNews: OfflineNews?
     @State public var haber: String
     @State var resim = ""
     
@@ -366,62 +415,42 @@ struct OfflineNewsListView: View {
                     Text("Kaydedilen Haberleri Sil")
                 }
                 List(filteredNews) { news in
-                    VStack(alignment: .center) {
-                        
-                        Image(mapSource(kaynak:news.kaynak))
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 50, height: 50)
-                            .padding(.trailing, 8)
-                        
-                        if let uiImage = UIImage(contentsOfFile: resim) {
-                            Image(uiImage: uiImage)
-                                .resizable()
-                                .scaledToFit()
-                                .frame(maxWidth: .infinity)
-                                .clipShape(RoundedRectangle(cornerRadius: 10))
-                            .onTapGesture(count: 1, perform: onTapGesture)
-                        } else {
-                            AsyncImage(url: URL(string: resim)) { image in
-                                image.resizable()
-                                    .scaledToFill()
-                                    .frame(maxWidth: .infinity)
-                                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                                .onTapGesture(count: 1, perform: onTapGesture)
-                            } placeholder: {
-                                ProgressView()
-                            }
+                    OfflineNewsRow(
+                        news: news,
+                        mapSource: mapSource,
+                        onTapGesture: {
+                            selectedNews = news
+                            isActive = true
+                        },
+                        onSummaryTap: {
+                            selectedNews = news
+                            showSummaryView = true
                         }
-                        
-                        Text(news.baslik)
-                            .font(.title3)
-                            .bold()
-                            .frame(maxWidth: .infinity, alignment: .center)
-                            .padding(.top, 5)
-                            .onTapGesture(count: 1, perform: onTapGesture)
-                        
-                        Text(news.tarih)
-                            .font(.footnote)
-                            .foregroundColor(.gray)
-                            .frame(maxWidth: .infinity, alignment: .center)
-                    }
-                    .padding()
-                    .sheet(isPresented: $isActive) {
-                        WebViewContainer(urlString: news.haber_url) {
-                            isActive = false
-                        }
-                    }
+                    )
                 }
             }
             .onAppear {
-                // Uygulama açıldığında haberleri yükle
-                //offlineNewsManager.deleteAllSavedNews()
                 offlineNewsManager.loadSavedNews()
                 get()
                 haber = filteredNews.first?.haber_url ?? ""
             }
             .refreshable {
                 offlineNewsManager.loadSavedNews()
+            }
+            .sheet(isPresented: $isActive) {
+                if let news = selectedNews {
+                    WebViewContainer(urlString: news.haber_url) {
+                        isActive = false
+                    }
+                }
+            }
+            .sheet(isPresented: $showSummaryView) {
+                if let news = selectedNews {
+                    OfflineHaberOzetiView(
+                        news: news,
+                        mapSource: mapSource
+                    )
+                }
             }
         }
         .navigationTitle("Kaydedilen Haberler")
@@ -529,3 +558,195 @@ class WebViewNavigationDelegate: NSObject, WKNavigationDelegate {
         onLoad?()
     }
 }
+
+// MARK: - Offline Haber Satırı (Kaydırmalı)
+struct OfflineNewsRow: View {
+    let news: OfflineNews
+    let mapSource: (String) -> String
+    let onTapGesture: () -> Void
+    let onSummaryTap: () -> Void
+    
+    @State private var dragOffset: CGFloat = 0
+    
+    var body: some View {
+        VStack(alignment: .center, spacing: 8) {
+            // Kaynak Logosu
+            Image(mapSource(news.kaynak))
+                .resizable()
+                .scaledToFit()
+                .frame(width: 50, height: 50)
+            
+            // Haber Görseli
+            if let uiImage = UIImage(contentsOfFile: news.resim_url) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxWidth: .infinity)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .onTapGesture(perform: onTapGesture)
+            }
+            
+            // Başlık
+            Text(news.baslik)
+                .font(.title3)
+                .bold()
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.top, 5)
+                .onTapGesture(perform: onTapGesture)
+            
+            // Tarih
+            Text(news.tarih)
+                .font(.footnote)
+                .foregroundColor(.gray)
+                .frame(maxWidth: .infinity, alignment: .center)
+            
+            // Özet durumu göstergesi
+            if news.ozet != nil {
+                HStack {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(.green)
+                        .font(.caption)
+                    Text("Özet mevcut")
+                        .font(.caption)
+                        .foregroundColor(.green)
+                }
+            }
+        }
+        .padding()
+        .offset(x: dragOffset)
+        .background(
+            // Sola kaydırma göstergesi
+            HStack {
+                Spacer()
+                if dragOffset < -50 {
+                    VStack {
+                        Image(systemName: "sparkles")
+                            .font(.title2)
+                            .foregroundColor(.white)
+                        Text("Özet")
+                            .font(.caption)
+                            .foregroundColor(.white)
+                    }
+                    .padding(.trailing, 20)
+                    .frame(width: abs(dragOffset))
+                    .background(news.ozet != nil ? Color.blue : Color.orange)
+                }
+            }
+        )
+        .gesture(
+            DragGesture()
+                .onChanged { value in
+                    // Sadece sola kaydırmaya izin ver
+                    if value.translation.width < 0 {
+                        dragOffset = value.translation.width
+                    }
+                }
+                .onEnded { value in
+                    if value.translation.width < -100 {
+                        // 100 pikselden fazla sola kaydırıldıysa özet ekranını aç
+                        onSummaryTap()
+                    }
+                    // Animasyonlu olarak sıfırla
+                    withAnimation {
+                        dragOffset = 0
+                    }
+                }
+        )
+    }
+}
+
+// MARK: - Offline Haber Özeti Görünümü
+struct OfflineHaberOzetiView: View {
+    @Environment(\.dismiss) var dismiss
+    let news: OfflineNews
+    let mapSource: (String) -> String
+    
+    var body: some View {
+        NavigationView {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    // Haber Görseli
+                    if let uiImage = UIImage(contentsOfFile: news.resim_url) {
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(maxWidth: .infinity)
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                    }
+                    
+                    // Kaynak Logosu
+                    HStack {
+                        let kaynak = mapSource(news.kaynak)
+                        Image(kaynak)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 40, height: 40)
+                        
+                        Text(news.kaynak)
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                        
+                        Spacer()
+                        
+                        Text(news.tarih)
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                    }
+                    
+                    // Haber Başlığı
+                    Text(news.baslik)
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .fixedSize(horizontal: false, vertical: true)
+                    
+                    Divider()
+                    
+                    // Özet Başlığı
+                    HStack {
+                        Image(systemName: "sparkles")
+                            .foregroundColor(.blue)
+                        Text("AI Özeti")
+                            .font(.headline)
+                            .foregroundColor(.blue)
+                        
+                        if news.ozet != nil {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundColor(.green)
+                                .font(.caption)
+                        }
+                    }
+                    
+                    // Özet İçeriği
+                    if let ozet = news.ozet {
+                        Text(ozet)
+                            .font(.body)
+                            .lineSpacing(6)
+                            .fixedSize(horizontal: false, vertical: true)
+                    } else {
+                        HStack {
+                            Image(systemName: "wifi.slash")
+                                .foregroundColor(.orange)
+                            Text("Özet çevrimdışı modda kaydedilmemiş.")
+                                .foregroundColor(.orange)
+                                .italic()
+                        }
+                        .padding(.vertical, 20)
+                    }
+                    
+                    Spacer(minLength: 20)
+                }
+                .padding()
+            }
+            .navigationTitle("Haber Özeti")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Kapat") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+}
+
