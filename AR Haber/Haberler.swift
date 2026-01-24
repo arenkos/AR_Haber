@@ -35,6 +35,77 @@ struct NewsItem: Identifiable, Codable, Hashable {
     }
 }
 
+// MARK: - Özet API Response Modelleri
+struct SummaryResponse: Codable {
+    let success: Bool
+    let data: SummaryData?
+    let cached: Bool?
+    let error: String?
+    let timestamp: String?
+    
+    struct SummaryData: Codable {
+        let id: Int
+        let baslik: String
+        let url: String
+        let ozet: String
+    }
+}
+
+// MARK: - Özet Yöneticisi
+class NewsSummaryManager: ObservableObject {
+    @Published var summaries: [Int: String] = [:] // NewsItem ID -> Özet metni
+    @Published var loadingStates: [Int: Bool] = [:] // NewsItem ID -> Yükleniyor mu?
+    
+    func fetchSummary(for newsItem: NewsItem) {
+        // Zaten yükleniyorsa tekrar çağırma
+        guard loadingStates[newsItem.id] != true else { return }
+        
+        // Zaten varsa tekrar getirme
+        if summaries[newsItem.id] != nil {
+            return
+        }
+        
+        loadingStates[newsItem.id] = true
+        
+        guard let encodedURL = newsItem.haber_url.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+              let url = URL(string: "https://www.aryazilimdanismanlik.com/armedya/ozet_olustur.php?haber_url=\(encodedURL)") else {
+            loadingStates[newsItem.id] = false
+            return
+        }
+        
+        URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
+            DispatchQueue.main.async {
+                self?.loadingStates[newsItem.id] = false
+                
+                guard let data = data, error == nil else {
+                    print("Özet yükleme hatası: \(error?.localizedDescription ?? "Bilinmeyen hata")")
+                    return
+                }
+                
+                do {
+                    let summaryResponse = try JSONDecoder().decode(SummaryResponse.self, from: data)
+                    
+                    if summaryResponse.success, let summaryData = summaryResponse.data {
+                        self?.summaries[newsItem.id] = summaryData.ozet
+                    } else {
+                        print("Özet oluşturulamadı: \(summaryResponse.error ?? "Bilinmeyen hata")")
+                    }
+                } catch {
+                    print("JSON decode hatası: \(error)")
+                }
+            }
+        }.resume()
+    }
+    
+    func getSummary(for newsItem: NewsItem) -> String? {
+        return summaries[newsItem.id]
+    }
+    
+    func isLoading(for newsItem: NewsItem) -> Bool {
+        return loadingStates[newsItem.id] ?? false
+    }
+}
+
 class NewsViewModel: ObservableObject {
     @EnvironmentObject var authViewModel: AuthViewModel
     @Published var news: [NewsItem] = []
@@ -587,10 +658,14 @@ struct NewsListView: View {
     }
 }
 
+// MARK: - Haber Öğesi Görünümü
 struct NewsItemView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
+    @StateObject var summaryManager = NewsSummaryManager()
     var offlineNewsManager = OfflineNewsManager.shared
     @State private var isChatListViewPresented = false
+    @State private var showSummaryView = false
+    @State private var dragOffset: CGFloat = 0
     let news: NewsItem
     let mapSource: (String) -> String
     let onTapGesture: () -> Void
@@ -699,15 +774,64 @@ struct NewsItemView: View {
                 .padding(.top, 5)
             }
         }
-        .onAppear {
-            //deleteAllSavedNews()
-            //get(resim_url: news.resim_url, haber_url: news.haber_url)
-            //print("resim:" + resim)
-        }
         .padding()
+        .offset(x: dragOffset)
+        .background(
+            // Sola kaydırma göstergesi
+            HStack {
+                Spacer()
+                if dragOffset < -50 {
+                    VStack {
+                        Image(systemName: "sparkles")
+                            .font(.title2)
+                            .foregroundColor(.white)
+                        Text("Özet")
+                            .font(.caption)
+                            .foregroundColor(.white)
+                    }
+                    .padding(.trailing, 20)
+                    .frame(width: abs(dragOffset))
+                    .background(Color.blue)
+                }
+            }
+        )
+        .gesture(
+            DragGesture()
+                .onChanged { value in
+                    // Sadece sola kaydırmaya izin ver
+                    if value.translation.width < 0 {
+                        dragOffset = value.translation.width
+                    }
+                }
+                .onEnded { value in
+                    if value.translation.width < -100 {
+                        // 100 pikselden fazla sola kaydırıldıysa özet ekranını aç
+                        summaryManager.fetchSummary(for: news)
+                        showSummaryView = true
+                    }
+                    // Animasyonlu olarak sıfırla
+                    withAnimation {
+                        dragOffset = 0
+                    }
+                }
+        )
         .sheet(isPresented: $isChatListViewPresented) {
             if let user = authViewModel.user {
-                ChatListView(senderId: user.username, newsItem: news) // Burada haber bilgilerini geçiyoruz
+                ChatListView(senderId: user.username, newsItem: news)
+            }
+        }
+        .sheet(isPresented: $showSummaryView) {
+            HaberOzetiView(
+                news: news,
+                summary: summaryManager.getSummary(for: news),
+                isLoading: summaryManager.isLoading(for: news),
+                mapSource: mapSource
+            )
+            .onAppear {
+                // Ekran açıldığında eğer özet yoksa yükle
+                if summaryManager.getSummary(for: news) == nil {
+                    summaryManager.fetchSummary(for: news)
+                }
             }
         }
     }
