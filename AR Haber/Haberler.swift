@@ -121,19 +121,23 @@ class NewsViewModel: ObservableObject {
         return FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
     }
 
-    func downloadImage(from url: URL, completion: @escaping (String?) -> Void) {
+    func downloadImage(from url: URL, newsID: Int, completion: @escaping (String?) -> Void) {
         let fileManager = FileManager.default
-        let destinationURL = getDocumentsDirectory().appendingPathComponent(url.lastPathComponent)
+        
+        // 🔧 FİX: Haber ID'si ile unique dosya adı oluştur
+        let fileExtension = url.pathExtension.isEmpty ? "jpg" : url.pathExtension
+        let uniqueFileName = "news_\(newsID)_image.\(fileExtension)"
+        let destinationURL = getDocumentsDirectory().appendingPathComponent(uniqueFileName)
 
         if fileManager.fileExists(atPath: destinationURL.path) {
-            print("Image already exists: \(destinationURL.path)")
+            print("✅ Image already exists for news \(newsID): \(destinationURL.path)")
             completion(destinationURL.path)
             return
         }
 
         let task = URLSession.shared.downloadTask(with: url) { (location, response, error) in
             guard let location = location, error == nil else {
-                print("Error downloading image \(url.absoluteString): \(error?.localizedDescription ?? "Unknown error")")
+                print("❌ Error downloading image for news \(newsID): \(error?.localizedDescription ?? "Unknown error")")
                 completion(nil)
                 return
             }
@@ -145,18 +149,18 @@ class NewsViewModel: ObservableObject {
                 try fileManager.moveItem(at: location, to: destinationURL)
 
                 if UIImage(contentsOfFile: destinationURL.path) != nil {
-                     print("Image successfully saved: \(destinationURL.path)")
+                     print("✅ Image successfully saved for news \(newsID): \(destinationURL.path)")
                 } else {
-                     print("Image file saved but couldn't be loaded at: \(destinationURL.path)")
+                     print("⚠️ Image file saved but couldn't be loaded for news \(newsID)")
                 }
 
                 completion(destinationURL.path)
             } catch {
                  if let nsError = error as NSError?, nsError.domain == NSCocoaErrorDomain, nsError.code == NSFileWriteFileExistsError {
-                     print("Image file likely already moved (fileExistsError): \(destinationURL.path)")
+                     print("✅ Image file likely already moved for news \(newsID)")
                      completion(destinationURL.path)
                  } else {
-                     print("Error saving image to \(destinationURL.path): \(error)")
+                     print("❌ Error saving image for news \(newsID): \(error)")
                      completion(nil)
                  }
             }
@@ -256,8 +260,8 @@ class NewsViewModel: ObservableObject {
                          continue
                     }
 
-                    // Start download - ADD [weak self] to capture list
-                    self.downloadImage(from: imageUrl) { [weak self] localPath in
+                    // Start download - Haber ID ile unique dosya adı
+                    self.downloadImage(from: imageUrl, newsID: item.id) { [weak self] localPath in
                         // Ensure update happens on the main thread
                         DispatchQueue.main.async {
                             // Correctly unwrap self and path
@@ -347,8 +351,8 @@ class NewsViewModel: ObservableObject {
                         continue
                     }
 
-                    // ADD [weak self] to capture list
-                    self.downloadImage(from: imageUrl) { [weak self] localPath in
+                    // Haber ID ile unique dosya adı
+                    self.downloadImage(from: imageUrl, newsID: item.id) { [weak self] localPath in
                          DispatchQueue.main.async {
                              guard let self = self, let path = localPath else { return }
                              if let indexToUpdate = self.news.firstIndex(where: { $0.id == item.id }) {
@@ -431,8 +435,8 @@ class NewsViewModel: ObservableObject {
                         continue
                     }
 
-                     // ADD [weak self] to capture list
-                     self.downloadImage(from: imageUrl) { [weak self] localPath in
+                     // Haber ID ile unique dosya adı
+                     self.downloadImage(from: imageUrl, newsID: item.id) { [weak self] localPath in
                          DispatchQueue.main.async {
                              guard let self = self, let path = localPath else { return }
                              if let indexToUpdate = self.news.firstIndex(where: { $0.id == item.id }) {
@@ -842,20 +846,19 @@ struct NewsItemView: View {
         let request = URLRequest(url: url)
         webView.load(request)
         
-        DispatchQueue.main.asyncAfter(deadline: .now()) { // 5 saniye bekleyerek tam yüklenmesini sağlıyoruz
+        DispatchQueue.main.asyncAfter(deadline: .now()) {
             webView.takeSnapshot(with: nil) { image, error in
                 if let image = image {
                     let fileURL = self.getDocumentsDirectory().appendingPathComponent("\(UUID().uuidString).webarchive")
                     
                     do {
                         try image.pngData()?.write(to: fileURL)
-                        //print("Sayfa başarıyla kaydedildi: \(fileURL)")
                         
-                        // Resmi indir ve kaydet
-                        self.downloadImage(from: imageURL) { savedImagePath in
+                        // Resmi indir ve kaydet - news.id ile unique dosya adı
+                        self.downloadImage(from: imageURL, newsID: self.news.id) { savedImagePath in
                             if let savedImagePath = savedImagePath {
                                 self.resim = savedImagePath
-                                print(resim)
+                                print("Resim kaydedildi: \(self.resim)")
                             }
                         }
                         
@@ -886,21 +889,24 @@ struct NewsItemView: View {
         }
     }
     
-    func downloadImage(from url: URL, completion: @escaping (String?) -> Void) {
+    func downloadImage(from url: URL, newsID: Int, completion: @escaping (String?) -> Void) {
         let fileManager = FileManager.default
-        let destinationURL = getDocumentsDirectory().appendingPathComponent(url.lastPathComponent)
+        
+        // 🔧 FİX: Haber ID'si ile unique dosya adı oluştur
+        let fileExtension = url.pathExtension.isEmpty ? "jpg" : url.pathExtension
+        let uniqueFileName = "news_\(newsID)_image.\(fileExtension)"
+        let destinationURL = getDocumentsDirectory().appendingPathComponent(uniqueFileName)
         
         // **Dosya zaten varsa direkt olarak path döndür**
         if fileManager.fileExists(atPath: destinationURL.path) {
-            print(url)
-            print("Dosya zaten var: \(destinationURL.path)")
+            print("✅ Dosya zaten var (news \(newsID)): \(destinationURL.path)")
             completion(destinationURL.path)
             return
         }
         
         let task = URLSession.shared.downloadTask(with: url) { (location, response, error) in
             guard let location = location, error == nil else {
-                print("Resim indirilirken hata oluştu: \(error?.localizedDescription ?? "Bilinmeyen hata")")
+                print("❌ Resim indirilirken hata (news \(newsID)): \(error?.localizedDescription ?? "Bilinmeyen hata")")
                 completion(nil)
                 return
             }
@@ -910,14 +916,14 @@ struct NewsItemView: View {
                 
                 // Kaydedilen resmin varlığını kontrol et
                 if UIImage(contentsOfFile: destinationURL.path) != nil {
-                    print("Resim başarıyla kaydedildi: \(destinationURL.path)")
+                    print("✅ Resim başarıyla kaydedildi (news \(newsID)): \(destinationURL.lastPathComponent)")
                 } else {
-                    print("Resim yüklenemedi.")
+                    print("⚠️ Resim yüklenemedi (news \(newsID))")
                 }
                 
-                completion(destinationURL.path) // Kaydedilen dosyanın yolunu döndür
+                completion(destinationURL.path)
             } catch {
-                print("Resim kaydedilirken hata oluştu: \(error)")
+                print("❌ Resim kaydedilirken hata (news \(newsID)): \(error)")
                 completion(nil)
             }
         }

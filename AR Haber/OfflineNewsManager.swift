@@ -92,18 +92,15 @@ class OfflineNewsManager: ObservableObject {
     // Resim indirme fonksiyonu
     func downloadImage(from url: URL, completion: @escaping (String?) -> Void) {
         let fileManager = FileManager.default
-        let destinationURL = getDocumentsDirectory().appendingPathComponent(url.lastPathComponent)
         
-        // **Dosya zaten varsa direkt olarak path döndür**
-        if fileManager.fileExists(atPath: destinationURL.path) {
-            print("Dosya zaten var: \(destinationURL.path)")
-            completion(destinationURL.path)
-            return
-        }
+        // 🔧 FİX: UUID ile unique dosya adı oluştur
+        let fileExtension = url.pathExtension.isEmpty ? "jpg" : url.pathExtension
+        let uniqueFileName = "offline_\(UUID().uuidString).\(fileExtension)"
+        let destinationURL = getDocumentsDirectory().appendingPathComponent(uniqueFileName)
         
         let task = URLSession.shared.downloadTask(with: url) { (location, response, error) in
             guard let location = location, error == nil else {
-                print("Resim indirilirken hata oluştu: \(error?.localizedDescription ?? "Bilinmeyen hata")")
+                print("❌ Offline resim indirilirken hata: \(error?.localizedDescription ?? "Bilinmeyen hata")")
                 completion(nil)
                 return
             }
@@ -113,14 +110,14 @@ class OfflineNewsManager: ObservableObject {
                 
                 // Kaydedilen resmin varlığını kontrol et
                 if UIImage(contentsOfFile: destinationURL.path) != nil {
-                    print("Resim başarıyla kaydedildi: \(destinationURL.path)")
+                    print("✅ Offline resim başarıyla kaydedildi: \(uniqueFileName)")
                 } else {
-                    print("Resim yüklenemedi.")
+                    print("⚠️ Offline resim yüklenemedi")
                 }
                 
-                completion(destinationURL.path) // Kaydedilen dosyanın yolunu döndür
+                completion(destinationURL.path)
             } catch {
-                print("Resim kaydedilirken hata oluştu: \(error)")
+                print("❌ Offline resim kaydedilirken hata: \(error)")
                 completion(nil)
             }
         }
@@ -492,18 +489,15 @@ struct OfflineNewsListView: View {
     
     func downloadImage(from url: URL, completion: @escaping (String?) -> Void) {
         let fileManager = FileManager.default
-        let destinationURL = getDocumentsDirectory().appendingPathComponent(url.lastPathComponent)
         
-        // **Dosya zaten varsa direkt olarak path döndür**
-        if fileManager.fileExists(atPath: destinationURL.path) {
-            print("Dosya zaten var: \(destinationURL.path)")
-            completion(destinationURL.path)
-            return
-        }
+        // 🔧 FİX: UUID ile unique dosya adı oluştur  
+        let fileExtension = url.pathExtension.isEmpty ? "jpg" : url.pathExtension
+        let uniqueFileName = "offline_view_\(UUID().uuidString).\(fileExtension)"
+        let destinationURL = getDocumentsDirectory().appendingPathComponent(uniqueFileName)
         
         let task = URLSession.shared.downloadTask(with: url) { (location, response, error) in
             guard let location = location, error == nil else {
-                print("Resim indirilirken hata oluştu: \(error?.localizedDescription ?? "Bilinmeyen hata")")
+                print("❌ Resim indirilirken hata: \(error?.localizedDescription ?? "Bilinmeyen hata")")
                 completion(nil)
                 return
             }
@@ -511,16 +505,15 @@ struct OfflineNewsListView: View {
             do {
                 try fileManager.moveItem(at: location, to: destinationURL)
                 
-                // Kaydedilen resmin varlığını kontrol et
                 if UIImage(contentsOfFile: destinationURL.path) != nil {
-                    print("Resim başarıyla kaydedildi: \(destinationURL.path)")
+                    print("✅ Resim başarıyla kaydedildi: \(uniqueFileName)")
                 } else {
-                    print("Resim yüklenemedi.")
+                    print("⚠️ Resim yüklenemedi")
                 }
                 
-                completion(destinationURL.path) // Kaydedilen dosyanın yolunu döndür
+                completion(destinationURL.path)
             } catch {
-                print("Resim kaydedilirken hata oluştu: \(error)")
+                print("❌ Resim kaydedilirken hata: \(error)")
                 completion(nil)
             }
         }
