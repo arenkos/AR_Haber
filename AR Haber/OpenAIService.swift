@@ -71,11 +71,53 @@ class OpenAIService {
             }
         }.resume()
     }
+    
+    func sendChatMessage(text: String, completion: @escaping (String?) -> Void) {
+        guard let url = URL(string: apiUrl) else { return }
+        
+        let requestData = OpenAIRequest(
+            model: "gpt-3.5-turbo",
+            messages: [["role": "user", "content": text]],
+            temperature: 0.7,
+            max_tokens: 500
+        )
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.addValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        do {
+            let jsonData = try JSONEncoder().encode(requestData)
+            request.httpBody = jsonData
+        } catch {
+            completion(nil)
+            return
+        }
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            guard let data = data, error == nil else {
+                completion(nil)
+                return
+            }
+
+            do {
+                let result = try JSONDecoder().decode(OpenAIResponse.self, from: data)
+                DispatchQueue.main.async {
+                    completion(result.choices.first?.message.content)
+                }
+            } catch {
+                completion(nil)
+            }
+        }.resume()
+    }
 }
 
 struct NewsSummaryView: View {
     let newsText: String
-    @State private var summary: String = "Özetleniyor..."
+    @State private var summary: String = ""
+    @State private var fullSummary: String = ""
+    @State private var isLoading: Bool = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -83,20 +125,49 @@ struct NewsSummaryView: View {
                 .font(.title)
                 .bold()
             
-            Text(summary)
-                .font(.body)
+            if isLoading {
+                HStack(spacing: 12) {
+                    ProgressView()
+                    Text("AI özet hazırlıyor...")
+                        .font(.subheadline)
+                        .foregroundColor(.gray)
+                }
                 .padding()
+            } else {
+                Text(summary)
+                    .font(.body)
+                    .padding()
+                    .animation(.default, value: summary)
+            }
             
             Spacer()
         }
         .padding()
         .onAppear {
             OpenAIService().summarize(text: newsText) { result in
+                isLoading = false
                 if let result = result {
-                    summary = result
+                    fullSummary = result
+                    startTypewriterEffect()
                 } else {
-                    summary = "Özet oluşturulamadı."
+                    fullSummary = "Özet oluşturulamadı."
+                    summary = fullSummary
                 }
+            }
+        }
+    }
+    
+    private func startTypewriterEffect() {
+        summary = ""
+        var charIndex = 0
+        let characters = Array(fullSummary)
+        
+        Timer.scheduledTimer(withTimeInterval: 0.03, repeats: true) { timer in
+            if charIndex < characters.count {
+                summary.append(characters[charIndex])
+                charIndex += 1
+            } else {
+                timer.invalidate()
             }
         }
     }

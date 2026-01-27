@@ -160,16 +160,18 @@ struct LikesView: View {
             }
             .sheet(isPresented: $showWebView) {
                 if let selectedNews = selectedNewsManager.selectedNews {
-                    WebViewContainer(urlString: "https://www.aryazilimdanismanlik.com/armedya/tiklanma.php?haber_url=" + String(selectedNews.haber_url)) {
+                    // Tıklanma kaydı - ID kullanarak
+                    WebViewContainer(urlString: "https://www.aryazilimdanismanlik.com/armedya/tiklanma.php?id=\(selectedNews.id)") {
                         showWebView = false
                     }
-                    .frame(width: 0, height: 0) // Tam ekran genişlik
+                    .frame(width: 0, height: 0)
                     .hidden()
                     
-                    WebViewContainer(urlString: selectedNews.haber_url) {
+                    // Haberi ID ile aç - Web tarafındaki gibi
+                    WebViewContainer(urlString: "https://www.aryazilimdanismanlik.com/armedya/haber_detay.php?id=\(selectedNews.id)") {
                         showWebView = false
                     }
-                    .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height-100) // Tam ekran genişlik
+                    .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height-100)
                 }
             }
         }

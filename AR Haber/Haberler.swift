@@ -67,8 +67,8 @@ class NewsSummaryManager: ObservableObject {
         
         loadingStates[newsItem.id] = true
         
-        guard let encodedURL = newsItem.haber_url.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
-              let url = URL(string: "https://www.aryazilimdanismanlik.com/armedya/ozet_olustur.php?haber_url=\(encodedURL)") else {
+        // ID kullanarak özet al - haber_url yerine
+        guard let url = URL(string: "https://www.aryazilimdanismanlik.com/armedya/ozet_olustur.php?id=\(newsItem.id)") else {
             loadingStates[newsItem.id] = false
             return
         }
