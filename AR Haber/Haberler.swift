@@ -241,6 +241,19 @@ class NewsViewModel: ObservableObject {
                 let startIndex = self.news.count
                 self.news.append(contentsOf: fetchedNewsItems)
                 self.currentPage += 1
+                
+                // Debug: İlk 3 haberi logla
+                if startIndex < 3 {
+                    for (index, item) in fetchedNewsItems.prefix(3).enumerated() {
+                        print("📰 Haber #\(index + 1):")
+                        print("   ID: \(item.id)")
+                        print("   Başlık: \(item.baslik.prefix(50))...")
+                        print("   Kaynak: \(item.kaynak)")
+                        print("   haber_url: '\(item.haber_url)'")
+                        print("   haber_url boş mu?: \(item.haber_url.isEmpty)")
+                        print("---")
+                    }
+                }
 
                 // --- Download Images Logic ---
                 for i in startIndex..<self.news.count {

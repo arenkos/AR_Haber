@@ -83,6 +83,14 @@ struct Genel_Akis: View {
                     isLoading: viewModel.isLoading,
                     onNewsSelected: { news in
                         selectedNewsManager.selectedNews = news
+                        // Debug: Seçilen haberi logla
+                        print("📰 Seçilen Haber:")
+                        print("   ID: \(news.id)")
+                        print("   Başlık: \(news.baslik)")
+                        print("   Kaynak: \(news.kaynak)")
+                        print("   haber_url: '\(news.haber_url)'")
+                        print("   Açılacak URL: https://www.aryazilimdanismanlik.com/armedya/haber_detay.php?id=\(news.id)")
+                        
                         showWebView = false
                         DispatchQueue.main.async {
                             showWebView = true
@@ -153,8 +161,18 @@ struct Genel_Akis: View {
                     .frame(width: 0, height: 0)
                     .hidden()
                     
-                    // Haberi ID ile aç - Web tarafındaki gibi
-                    WebViewContainer(urlString: "https://www.aryazilimdanismanlik.com/armedya/haber_detay.php?id=\(selectedNews.id)") {
+                    // Haber URL'ini akıllıca seç
+                    let newsURL: String = {
+                        // Eğer haber_url geçerliyse onu kullan
+                        if !selectedNews.haber_url.isEmpty && selectedNews.haber_url.starts(with: "http") {
+                            return selectedNews.haber_url
+                        }
+                        // Aksi takdirde ID bazlı endpoint kullan
+                        // NOT: Bu endpoint'i sunucuda oluşturmanız gerekebilir
+                        return "https://www.aryazilimdanismanlik.com/armedya/haber.php?id=\(selectedNews.id)"
+                    }()
+                    
+                    WebViewContainer(urlString: newsURL) {
                         showWebView = false
                     }
                     .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height-100)

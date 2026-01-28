@@ -167,8 +167,17 @@ struct LikesView: View {
                     .frame(width: 0, height: 0)
                     .hidden()
                     
-                    // Haberi ID ile aç - Web tarafındaki gibi
-                    WebViewContainer(urlString: "https://www.aryazilimdanismanlik.com/armedya/haber_detay.php?id=\(selectedNews.id)") {
+                    // Haber URL'ini akıllıca seç
+                    let newsURL: String = {
+                        // Eğer haber_url geçerliyse onu kullan
+                        if !selectedNews.haber_url.isEmpty && selectedNews.haber_url.starts(with: "http") {
+                            return selectedNews.haber_url
+                        }
+                        // Aksi takdirde ID bazlı endpoint kullan
+                        return "https://www.aryazilimdanismanlik.com/armedya/haber.php?id=\(selectedNews.id)"
+                    }()
+                    
+                    WebViewContainer(urlString: newsURL) {
                         showWebView = false
                     }
                     .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height-100)
