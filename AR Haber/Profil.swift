@@ -363,7 +363,7 @@ struct Profil: View {
                             .cornerRadius(10)
                         }
 
-                        NavigationLink(destination: OfflineNewsListView(haber: "a")) {
+                        NavigationLink(destination: OfflineNewsListView()) {
                             VStack {
                                 Image(systemName: "archivebox.fill")  // Daha uygun bir simge
                                     .font(.largeTitle)

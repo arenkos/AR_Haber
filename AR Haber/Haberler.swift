@@ -241,6 +241,19 @@ class NewsViewModel: ObservableObject {
                 let startIndex = self.news.count
                 self.news.append(contentsOf: fetchedNewsItems)
                 self.currentPage += 1
+                
+                // Debug: İlk 3 haberi logla
+                if startIndex < 3 {
+                    for (index, item) in fetchedNewsItems.prefix(3).enumerated() {
+                        print("📰 Haber #\(index + 1):")
+                        print("   ID: \(item.id)")
+                        print("   Başlık: \(item.baslik.prefix(50))...")
+                        print("   Kaynak: \(item.kaynak)")
+                        print("   haber_url: '\(item.haber_url)'")
+                        print("   haber_url boş mu?: \(item.haber_url.isEmpty)")
+                        print("---")
+                    }
+                }
 
                 // --- Download Images Logic ---
                 for i in startIndex..<self.news.count {
@@ -666,10 +679,14 @@ struct NewsListView: View {
 struct NewsItemView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @StateObject var summaryManager = NewsSummaryManager()
-    var offlineNewsManager = OfflineNewsManager.shared
+    @ObservedObject var offlineNewsManager = OfflineNewsManager.shared
     @State private var isChatListViewPresented = false
     @State private var showSummaryView = false
     @State private var dragOffset: CGFloat = 0
+    @State private var isSaved = false
+    @State private var showSavedAlert = false
+    @State private var alertMessage = ""
+    @State private var alertTitle = ""
     let news: NewsItem
     let mapSource: (String) -> String
     let onTapGesture: () -> Void
@@ -769,10 +786,38 @@ struct NewsItemView: View {
                     
                     // Haberi Kaydet Butonu
                     Button(action: {
+                        // Eğer haber zaten kaydedilmişse uyar
+                        if isSaved {
+                            alertTitle = "Haber Zaten Kaydedilmiş"
+                            alertMessage = "Bu haber zaten kaydedilenler listesinde."
+                            showSavedAlert = true
+                            
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                                showSavedAlert = false
+                            }
+                            return
+                        }
+                        
+                        isSaved = true
+                        alertTitle = "Haber Kaydedildi!"
+                        alertMessage = "Haber başarıyla kaydedilenler listesine eklendi."
+                        showSavedAlert = true
                         offlineNewsManager.get(kaynak: news.kaynak, haber_url: news.haber_url, resim_url: news.resim_url, baslik: news.baslik, tarih: news.tarih)
+                        
+                        // 2 saniye sonra alert'i kapat
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                            showSavedAlert = false
+                        }
                     }) {
-                        Image(systemName: "bookmark")  // Kaydetme işlemi için uygun simge
-                            .foregroundColor(.gray)
+                        Image(systemName: isSaved ? "bookmark.fill" : "bookmark")
+                            .foregroundColor(isSaved ? .blue : .gray)
+                    }
+                    .alert(alertTitle, isPresented: $showSavedAlert) {
+                        Button("Tamam", role: .cancel) {
+                            showSavedAlert = false
+                        }
+                    } message: {
+                        Text(alertMessage)
                     }
                 }
                 .padding(.top, 5)
@@ -780,6 +825,10 @@ struct NewsItemView: View {
         }
         .padding()
         .offset(x: dragOffset)
+        .onAppear {
+            // Haberin daha önce kaydedilip kaydedilmediğini kontrol et
+            isSaved = offlineNewsManager.offlineNewsList.contains { $0.haber_url == news.haber_url }
+        }
         .background(
             // Sola kaydırma göstergesi
             HStack {

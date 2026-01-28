@@ -117,12 +117,17 @@ struct WebViewContainer: UIViewRepresentable {
     let onClose: () -> Void
     
     func makeUIView(context: Context) -> WKWebView {
-        WKWebView()
+        let webView = WKWebView()
+        webView.navigationDelegate = context.coordinator
+        return webView
     }
     
     func updateUIView(_ uiView: WKWebView, context: Context) {
         if let url = URL(string: urlString) {
+            print("📱 Loading URL: \(url.absoluteString)")
             uiView.load(URLRequest(url: url))
+        } else {
+            print("❌ Invalid URL: \(urlString)")
         }
     }
     
@@ -134,11 +139,24 @@ struct WebViewContainer: UIViewRepresentable {
         Coordinator(onClose: onClose)
     }
     
-    class Coordinator: NSObject {
+    class Coordinator: NSObject, WKNavigationDelegate {
         let onClose: () -> Void
         
         init(onClose: @escaping () -> Void) {
             self.onClose = onClose
+        }
+        
+        func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+            print("✅ Page loaded successfully: \(webView.url?.absoluteString ?? "Unknown")")
+        }
+        
+        func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+            print("❌ Navigation failed: \(error.localizedDescription)")
+        }
+        
+        func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+            print("❌ Provisional navigation failed: \(error.localizedDescription)")
+            print("   URL: \(webView.url?.absoluteString ?? "Unknown")")
         }
     }
 }
