@@ -194,6 +194,24 @@ class OfflineNewsManager: ObservableObject {
         }
     }
 
+    // Tek bir haberi silme fonksiyonu
+    func deleteNews(_ news: OfflineNews) {
+        let fileManager = FileManager.default
+
+        // Resim dosyasını sil
+        if fileManager.fileExists(atPath: news.resim_url) {
+            try? fileManager.removeItem(atPath: news.resim_url)
+            print("🗑️ Resim silindi: \(news.resim_url)")
+        }
+
+        // Listeden kaldır
+        DispatchQueue.main.async {
+            self.offlineNewsList.removeAll { $0.id == news.id }
+            self.saveNewsToFile()
+            print("✅ Haber silindi: \(news.baslik)")
+        }
+    }
+
     func deleteAllSavedNews() {
         let fileManager = FileManager.default
         let documentsDirectory = getDocumentsDirectory()
@@ -486,8 +504,7 @@ struct OfflineNews: Identifiable, Decodable, Encodable {
 struct OfflineNewsListView: View {
     @State private var searchText = ""
     @ObservedObject var offlineNewsManager = OfflineNewsManager.shared
-    @State private var isActive: Bool = false
-    @State private var selectedNews: OfflineNews?
+    @State private var selectedWebNews: OfflineNews?  // Haber sayfası için
     @State private var selectedSummaryNews: OfflineNews?  // Özet için ayrı state
 
     var filteredNews: [OfflineNews] {
@@ -530,11 +547,13 @@ struct OfflineNewsListView: View {
                         news: news,
                         mapSource: mapSource,
                         onTapGesture: {
-                            selectedNews = news
-                            isActive = true
+                            selectedWebNews = news
                         },
                         onSummaryTap: {
-                            selectedSummaryNews = news  // Ayrı state kullan
+                            selectedSummaryNews = news
+                        },
+                        onDelete: {
+                            offlineNewsManager.deleteNews(news)
                         }
                     )
                 }
@@ -545,11 +564,9 @@ struct OfflineNewsListView: View {
             .refreshable {
                 offlineNewsManager.loadSavedNews()
             }
-            .sheet(isPresented: $isActive) {
-                if let news = selectedNews {
-                    WebViewContainer(urlString: news.haber_url) {
-                        isActive = false
-                    }
+            .sheet(item: $selectedWebNews) { news in
+                WebViewContainer(urlString: news.haber_url) {
+                    selectedWebNews = nil
                 }
             }
             .sheet(item: $selectedSummaryNews) { news in
@@ -561,8 +578,8 @@ struct OfflineNewsListView: View {
         }
         .navigationTitle("Kaydedilen Haberler")
     }
-    func onTapGesture() {
-        self.isActive.toggle()
+    func deleteNews(_ news: OfflineNews) {
+        offlineNewsManager.deleteNews(news)
     }
 }
 
@@ -598,59 +615,30 @@ struct OfflineNewsRow: View {
     let mapSource: (String) -> String
     let onTapGesture: () -> Void
     let onSummaryTap: () -> Void
+    let onDelete: () -> Void
 
     @State private var dragOffset: CGFloat = 0
 
     var body: some View {
-        VStack(alignment: .center, spacing: 8) {
-            // Kaynak Logosu
-            Image(mapSource(news.kaynak))
-                .resizable()
-                .scaledToFit()
-                .frame(width: 50, height: 50)
-
-            // Haber Görseli
-            if let uiImage = UIImage(contentsOfFile: news.resim_url) {
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(maxWidth: .infinity)
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                    .onTapGesture(perform: onTapGesture)
-            }
-
-            // Başlık
-            Text(news.baslik)
-                .font(.title3)
-                .bold()
-                .frame(maxWidth: .infinity, alignment: .center)
-                .padding(.top, 5)
-                .onTapGesture(perform: onTapGesture)
-
-            // Tarih
-            Text(news.tarih)
-                .font(.footnote)
-                .foregroundColor(.gray)
-                .frame(maxWidth: .infinity, alignment: .center)
-
-            // Özet durumu göstergesi
-            if news.ozet != nil {
-                HStack {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(.green)
-                        .font(.caption)
-                    Text("Özet mevcut")
-                        .font(.caption)
-                        .foregroundColor(.green)
-                }
-            }
-        }
-        .padding()
-        .offset(x: dragOffset)
-        .background(
-            // Sola kaydırma göstergesi
+        ZStack {
+            // Arka plan - Sağa kaydırma (Silme) göstergesi
             HStack {
+                if dragOffset > 50 {
+                    VStack {
+                        Image(systemName: "trash.fill")
+                            .font(.title2)
+                            .foregroundColor(.white)
+                        Text("Sil")
+                            .font(.caption)
+                            .foregroundColor(.white)
+                    }
+                    .padding(.leading, 20)
+                    .frame(width: dragOffset)
+                    .frame(maxHeight: .infinity)
+                    .background(Color.red)
+                }
                 Spacer()
+                // Sola kaydırma (Özet) göstergesi
                 if dragOffset < -50 {
                     VStack {
                         Image(systemName: "sparkles")
@@ -662,22 +650,73 @@ struct OfflineNewsRow: View {
                     }
                     .padding(.trailing, 20)
                     .frame(width: abs(dragOffset))
+                    .frame(maxHeight: .infinity)
                     .background(news.ozet != nil ? Color.blue : Color.orange)
                 }
             }
-        )
+
+            // Ana içerik
+            VStack(alignment: .center, spacing: 8) {
+                // Kaynak Logosu
+                Image(mapSource(news.kaynak))
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 50, height: 50)
+
+                // Haber Görseli
+                if let uiImage = UIImage(contentsOfFile: news.resim_url) {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxWidth: .infinity)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                        .onTapGesture(perform: onTapGesture)
+                }
+
+                // Başlık
+                Text(news.baslik)
+                    .font(.title3)
+                    .bold()
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.top, 5)
+                    .onTapGesture(perform: onTapGesture)
+
+                // Tarih
+                Text(news.tarih)
+                    .font(.footnote)
+                    .foregroundColor(.gray)
+                    .frame(maxWidth: .infinity, alignment: .center)
+
+                // Özet durumu göstergesi
+                if news.ozet != nil {
+                    HStack {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(.green)
+                            .font(.caption)
+                        Text("Özet mevcut")
+                            .font(.caption)
+                            .foregroundColor(.green)
+                    }
+                }
+            }
+            .padding()
+            .background(Color(UIColor.systemBackground))
+            .offset(x: dragOffset)
+        }
         .gesture(
             DragGesture()
                 .onChanged { value in
-                    // Sadece sola kaydırmaya izin ver
-                    if value.translation.width < 0 {
-                        dragOffset = value.translation.width
-                    }
+                    dragOffset = value.translation.width
                 }
                 .onEnded { value in
                     if value.translation.width < -100 {
-                        // 100 pikselden fazla sola kaydırıldıysa özet ekranını aç
+                        // Sola kaydırma - Özet
                         onSummaryTap()
+                    } else if value.translation.width > 100 {
+                        // Sağa kaydırma - Silme
+                        withAnimation {
+                            onDelete()
+                        }
                     }
                     // Animasyonlu olarak sıfırla
                     withAnimation {
