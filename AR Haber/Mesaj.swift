@@ -339,6 +339,117 @@ struct ChatListView: View {
     }
 }
 
+// Haber Önizleme Kartı
+struct NewsPreviewCard: View {
+    let url: String
+    let isSender: Bool
+    let onTap: () -> Void
+
+    @State private var newsTitle: String = "Haber yükleniyor..."
+    @State private var newsImage: String = ""
+    @State private var isLoading = true
+
+    var body: some View {
+        Button(action: onTap) {
+            HStack(spacing: 10) {
+                // Haber görseli
+                if !newsImage.isEmpty {
+                    AsyncImage(url: URL(string: newsImage)) { phase in
+                        switch phase {
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(width: 60, height: 60)
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                        case .failure(_):
+                            Image(systemName: "newspaper.fill")
+                                .font(.system(size: 30))
+                                .foregroundColor(.white.opacity(0.7))
+                                .frame(width: 60, height: 60)
+                        case .empty:
+                            ProgressView()
+                                .frame(width: 60, height: 60)
+                        @unknown default:
+                            EmptyView()
+                        }
+                    }
+                } else {
+                    Image(systemName: "newspaper.fill")
+                        .font(.system(size: 30))
+                        .foregroundColor(.white.opacity(0.7))
+                        .frame(width: 60, height: 60)
+                }
+
+                // Haber başlığı
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(newsTitle)
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundColor(.white)
+                        .lineLimit(3)
+                        .multilineTextAlignment(.leading)
+
+                    Text("Haberi görüntüle →")
+                        .font(.caption)
+                        .foregroundColor(.white.opacity(0.8))
+                }
+            }
+            .padding(10)
+            .frame(maxWidth: 280, alignment: .leading)
+            .background(isSender ? Color.blue : Color.green)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+        }
+        .onAppear {
+            fetchNewsMetadata()
+        }
+    }
+
+    private func fetchNewsMetadata() {
+        // URL'den haber bilgilerini çek
+        guard
+            let apiURL = URL(
+                string:
+                    "https://www.aryazilimdanismanlik.com/armedya/get_news_by_url.php?url=\(url.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")"
+            )
+        else {
+            newsTitle = "Haber"
+            isLoading = false
+            return
+        }
+
+        URLSession.shared.dataTask(with: apiURL) { data, _, error in
+            guard let data = data else {
+                DispatchQueue.main.async {
+                    self.newsTitle = "Haber"
+                    self.isLoading = false
+                }
+                return
+            }
+
+            do {
+                if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                    DispatchQueue.main.async {
+                        self.newsTitle = json["baslik"] as? String ?? "Haber"
+                        self.newsImage = json["resim"] as? String ?? ""
+                        self.isLoading = false
+                    }
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    self.newsTitle = "Haber"
+                    self.isLoading = false
+                }
+            }
+        }.resume()
+    }
+}
+
+// Mesajın haber linki olup olmadığını kontrol et
+func isNewsURL(_ text: String) -> Bool {
+    return text.contains("aryazilimdanismanlik.com") && text.contains("http")
+}
+
 // Sohbet görünümü
 struct ChatView: View {
     @StateObject private var chatServiceWebSocket = ChatWebSocketService()
@@ -361,8 +472,13 @@ struct ChatView: View {
                             HStack {
                                 if message.sender_id == senderId {
                                     Spacer()
-                                    VStack {
-                                        if let url = URL(string: message.text),
+                                    VStack(alignment: .trailing) {
+                                        if isNewsURL(message.text) {
+                                            // Haber önizleme kartı göster
+                                            NewsPreviewCard(url: message.text, isSender: true) {
+                                                urlToOpen = URLItem(url: message.text)
+                                            }
+                                        } else if let url = URL(string: message.text),
                                             UIApplication.shared.canOpenURL(url)
                                         {
                                             Button(action: {
@@ -373,8 +489,6 @@ struct ChatView: View {
                                                     .background(Color.blue)
                                                     .foregroundColor(.white)
                                                     .clipShape(RoundedRectangle(cornerRadius: 10))
-                                                    .frame(
-                                                        maxWidth: .infinity, alignment: .trailing)
                                             }
                                         } else {
                                             Text(message.text)
@@ -382,16 +496,20 @@ struct ChatView: View {
                                                 .background(Color.blue)
                                                 .foregroundColor(.white)
                                                 .clipShape(RoundedRectangle(cornerRadius: 10))
-                                                .frame(maxWidth: .infinity, alignment: .trailing)
                                         }
 
                                         Text(message.timestamp)
                                             .font(.system(size: 7))
-                                            .frame(maxWidth: .infinity, alignment: .trailing)
+                                            .foregroundColor(.gray)
                                     }
                                 } else {
-                                    VStack {
-                                        if let url = URL(string: message.text),
+                                    VStack(alignment: .leading) {
+                                        if isNewsURL(message.text) {
+                                            // Haber önizleme kartı göster
+                                            NewsPreviewCard(url: message.text, isSender: false) {
+                                                urlToOpen = URLItem(url: message.text)
+                                            }
+                                        } else if let url = URL(string: message.text),
                                             UIApplication.shared.canOpenURL(url)
                                         {
                                             Button(action: {
@@ -402,7 +520,6 @@ struct ChatView: View {
                                                     .background(Color.green)
                                                     .foregroundColor(.white)
                                                     .clipShape(RoundedRectangle(cornerRadius: 10))
-                                                    .frame(maxWidth: .infinity, alignment: .leading)
                                             }
                                         } else {
                                             Text(message.text)
@@ -410,11 +527,10 @@ struct ChatView: View {
                                                 .background(Color.green)
                                                 .foregroundColor(.white)
                                                 .clipShape(RoundedRectangle(cornerRadius: 10))
-                                                .frame(maxWidth: .infinity, alignment: .leading)
                                         }
                                         Text(message.timestamp)
                                             .font(.system(size: 7))
-                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                            .foregroundColor(.gray)
                                     }
                                     Spacer()
                                 }
