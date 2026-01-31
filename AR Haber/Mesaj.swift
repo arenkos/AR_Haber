@@ -9,6 +9,23 @@ struct Message: Identifiable, Codable {
     let receiver_id: String
     let text: String
     let timestamp: String
+    let haber_baslik: String?
+    let haber_resim: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id, sender_id, receiver_id, text, timestamp, haber_baslik, haber_resim
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(Int.self, forKey: .id)
+        sender_id = try container.decode(String.self, forKey: .sender_id)
+        receiver_id = try container.decode(String.self, forKey: .receiver_id)
+        text = try container.decode(String.self, forKey: .text)
+        timestamp = try container.decode(String.self, forKey: .timestamp)
+        haber_baslik = try container.decodeIfPresent(String.self, forKey: .haber_baslik)
+        haber_resim = try container.decodeIfPresent(String.self, forKey: .haber_resim)
+    }
 }
 
 // Kullanıcı yapısı
@@ -138,6 +155,7 @@ class ChatService: ObservableObject {
 
     func sendMessage(
         senderId: String, receiverId: String, text: String, deviceToken: String,
+        haberBaslik: String? = nil, haberResim: String? = nil,
         completion: @escaping (Bool, String) -> Void
     ) {
         guard let url = URL(string: "https://www.aryazilimdanismanlik.com/armedya/send_message.php")
@@ -146,12 +164,28 @@ class ChatService: ObservableObject {
             return
         }
 
-        let body: [String: Any] = [
+        // Production ortamını belirle
+        #if DEBUG
+            let isProduction = false
+        #else
+            let isProduction = true
+        #endif
+
+        var body: [String: Any] = [
             "sender_id": senderId,
             "receiver_id": receiverId,
             "text": text,
             "device_token": deviceToken,
+            "is_production": isProduction,
         ]
+
+        // Haber bilgilerini ekle (varsa)
+        if let baslik = haberBaslik {
+            body["haber_baslik"] = baslik
+        }
+        if let resim = haberResim {
+            body["haber_resim"] = resim
+        }
 
         let jsonData = try? JSONSerialization.data(withJSONObject: body)
 
@@ -343,18 +377,16 @@ struct ChatListView: View {
 struct NewsPreviewCard: View {
     let url: String
     let isSender: Bool
+    let title: String?
+    let imageUrl: String?
     let onTap: () -> Void
-
-    @State private var newsTitle: String = "Haber yükleniyor..."
-    @State private var newsImage: String = ""
-    @State private var isLoading = true
 
     var body: some View {
         Button(action: onTap) {
             HStack(spacing: 10) {
                 // Haber görseli
-                if !newsImage.isEmpty {
-                    AsyncImage(url: URL(string: newsImage)) { phase in
+                if let img = imageUrl, !img.isEmpty {
+                    AsyncImage(url: URL(string: img)) { phase in
                         switch phase {
                         case .success(let image):
                             image
@@ -383,7 +415,7 @@ struct NewsPreviewCard: View {
 
                 // Haber başlığı
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(newsTitle)
+                    Text(title ?? "Haber")
                         .font(.subheadline)
                         .fontWeight(.medium)
                         .foregroundColor(.white)
@@ -400,54 +432,22 @@ struct NewsPreviewCard: View {
             .background(isSender ? Color.blue : Color.green)
             .clipShape(RoundedRectangle(cornerRadius: 12))
         }
-        .onAppear {
-            fetchNewsMetadata()
-        }
-    }
-
-    private func fetchNewsMetadata() {
-        // URL'den haber bilgilerini çek
-        guard
-            let apiURL = URL(
-                string:
-                    "https://www.aryazilimdanismanlik.com/armedya/get_news_by_url.php?url=\(url.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")"
-            )
-        else {
-            newsTitle = "Haber"
-            isLoading = false
-            return
-        }
-
-        URLSession.shared.dataTask(with: apiURL) { data, _, error in
-            guard let data = data else {
-                DispatchQueue.main.async {
-                    self.newsTitle = "Haber"
-                    self.isLoading = false
-                }
-                return
-            }
-
-            do {
-                if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
-                    DispatchQueue.main.async {
-                        self.newsTitle = json["baslik"] as? String ?? "Haber"
-                        self.newsImage = json["resim"] as? String ?? ""
-                        self.isLoading = false
-                    }
-                }
-            } catch {
-                DispatchQueue.main.async {
-                    self.newsTitle = "Haber"
-                    self.isLoading = false
-                }
-            }
-        }.resume()
     }
 }
 
 // Mesajın haber linki olup olmadığını kontrol et
 func isNewsURL(_ text: String) -> Bool {
-    return text.contains("aryazilimdanismanlik.com") && text.contains("http")
+    // Debug log
+    print("isNewsURL kontrolü: \(text)")
+
+    // Haber URL'si kontrolü - armedya veya aryazilimdanismanlik içeriyorsa
+    let isNews =
+        (text.contains("armedya") || text.contains("aryazilimdanismanlik")
+            || text.contains("arhaber"))
+        && (text.hasPrefix("http://") || text.hasPrefix("https://"))
+
+    print("isNewsURL sonuç: \(isNews)")
+    return isNews
 }
 
 // Sohbet görünümü
@@ -473,9 +473,14 @@ struct ChatView: View {
                                 if message.sender_id == senderId {
                                     Spacer()
                                     VStack(alignment: .trailing) {
-                                        if isNewsURL(message.text) {
-                                            // Haber önizleme kartı göster
-                                            NewsPreviewCard(url: message.text, isSender: true) {
+                                        // Haber bilgisi varsa kart göster
+                                        if message.haber_baslik != nil {
+                                            NewsPreviewCard(
+                                                url: message.text,
+                                                isSender: true,
+                                                title: message.haber_baslik,
+                                                imageUrl: message.haber_resim
+                                            ) {
                                                 urlToOpen = URLItem(url: message.text)
                                             }
                                         } else if let url = URL(string: message.text),
@@ -504,9 +509,14 @@ struct ChatView: View {
                                     }
                                 } else {
                                     VStack(alignment: .leading) {
-                                        if isNewsURL(message.text) {
-                                            // Haber önizleme kartı göster
-                                            NewsPreviewCard(url: message.text, isSender: false) {
+                                        // Haber bilgisi varsa kart göster
+                                        if message.haber_baslik != nil {
+                                            NewsPreviewCard(
+                                                url: message.text,
+                                                isSender: false,
+                                                title: message.haber_baslik,
+                                                imageUrl: message.haber_resim
+                                            ) {
                                                 urlToOpen = URLItem(url: message.text)
                                             }
                                         } else if let url = URL(string: message.text),
@@ -683,7 +693,9 @@ struct ChatView: View {
 
         chatService.sendMessage(
             senderId: senderId, receiverId: receiverId, text: currentMessage,
-            deviceToken: deviceToken
+            deviceToken: deviceToken,
+            haberBaslik: newsItem?.baslik,
+            haberResim: newsItem?.originalResimUrl ?? newsItem?.resim_url
         ) { success, message in
             if success {
                 DispatchQueue.main.async {

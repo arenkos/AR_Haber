@@ -22,6 +22,7 @@ struct NewsItem: Identifiable, Codable, Hashable {
     var kategori: String
     var resim_url: String
     var haber_url: String
+    var originalResimUrl: String?  // Orijinal web URL'sini sakla
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -31,6 +32,19 @@ struct NewsItem: Identifiable, Codable, Hashable {
         case kategori
         case resim_url
         case haber_url
+    }
+
+    // Custom init for decoding - originalResimUrl'i resim_url'den kopyala
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(Int.self, forKey: .id)
+        baslik = try container.decode(String.self, forKey: .baslik)
+        tarih = try container.decode(String.self, forKey: .tarih)
+        kaynak = try container.decode(String.self, forKey: .kaynak)
+        kategori = try container.decode(String.self, forKey: .kategori)
+        resim_url = try container.decode(String.self, forKey: .resim_url)
+        haber_url = try container.decode(String.self, forKey: .haber_url)
+        originalResimUrl = resim_url  // Başlangıçta orijinal URL'yi sakla
     }
 }
 
