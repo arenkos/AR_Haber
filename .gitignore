@@ -1,0 +1,27 @@
+# Xcode
+build/
+DerivedData/
+*.xcuserstate
+*.xcuserdatad
+*.xccheckout
+*.xcscmblueprint
+
+# CocoaPods
+Pods/
+*.xcworkspace
+
+# SPM
+.build/
+.swiftpm/
+
+# PHP (sunucu bilgileri içeriyor)
+PHP/
+
+# macOS
+.DS_Store
+*.plist.bak
+
+# IDE
+.idea/
+*.swp
+*.swo
