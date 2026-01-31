@@ -87,6 +87,12 @@ struct ContentView: View {
                 Spacer()
 
                 Button(action: {
+                    // Önce giriş kontrolü
+                    if !authViewModel.isLoggedIn {
+                        selectedTab = 5  // Profil sekmesine yönlendir
+                        return
+                    }
+                    // Sonra abonelik kontrolü
                     if subscriptionManager.hasAIAccess {
                         showAIChat = true
                     } else {

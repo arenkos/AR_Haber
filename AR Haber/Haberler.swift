@@ -780,9 +780,12 @@ struct NewsListView: View {
 struct NewsItemView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @StateObject var summaryManager = NewsSummaryManager()
+    @ObservedObject private var subscriptionManager = SubscriptionManager.shared
     @ObservedObject var offlineNewsManager = OfflineNewsManager.shared
     @State private var isChatListViewPresented = false
     @State private var showSummaryView = false
+    @State private var showPaywall = false
+    @State private var showLoginRequired = false
     @State private var dragOffset: CGFloat = 0
     @State private var isSaved = false
     @State private var showSavedAlert = false
@@ -953,9 +956,20 @@ struct NewsItemView: View {
                 }
                 .onEnded { value in
                     if value.translation.width < -100 {
-                        // 100 pikselden fazla sola kaydırıldıysa özet ekranını aç
-                        summaryManager.fetchSummary(for: news)
-                        showSummaryView = true
+                        // 100 pikselden fazla sola kaydırıldıysa
+                        // Önce giriş kontrolü
+                        guard authViewModel.isLoggedIn else {
+                            showLoginRequired = true
+                            withAnimation { dragOffset = 0 }
+                            return
+                        }
+                        // Sonra abonelik kontrolü
+                        if subscriptionManager.hasAIAccess {
+                            summaryManager.fetchSummary(for: news)
+                            showSummaryView = true
+                        } else {
+                            showPaywall = true
+                        }
                     }
                     // Animasyonlu olarak sıfırla
                     withAnimation {
@@ -981,6 +995,14 @@ struct NewsItemView: View {
                     summaryManager.fetchSummary(for: news)
                 }
             }
+        }
+        .sheet(isPresented: $showPaywall) {
+            PaywallView()
+        }
+        .alert("Giriş Gerekli", isPresented: $showLoginRequired) {
+            Button("Tamam", role: .cancel) {}
+        } message: {
+            Text("Bu özelliği kullanmak için lütfen giriş yapın.")
         }
     }
     func get(resim_url: String, haber_url: String) {
