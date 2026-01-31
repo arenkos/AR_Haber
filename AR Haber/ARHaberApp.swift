@@ -11,7 +11,7 @@ struct ARHaberApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            SplashScreenView()
                 .environmentObject(authViewModel)
                 .onAppear {
                     registerForPushNotifications()

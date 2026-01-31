@@ -8,7 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		8C6CD6722F2E23D800A51DE2 /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8C6CD6712F2E23D800A51DE2 /* StoreKit.framework */; };
-		8CAB33912F27024300798468 /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = 8CAB33902F27024300798468 /* GoogleMobileAds */; };
+		8C6CD6772F2E892200A51DE2 /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = 8C6CD6762F2E892200A51DE2 /* GoogleMobileAds */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -71,7 +71,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8CAB33912F27024300798468 /* GoogleMobileAds in Frameworks */,
+				8C6CD6772F2E892200A51DE2 /* GoogleMobileAds in Frameworks */,
 				8C6CD6722F2E23D800A51DE2 /* StoreKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -150,7 +150,7 @@
 			);
 			name = "AR Haber";
 			packageProductDependencies = (
-				8CAB33902F27024300798468 /* GoogleMobileAds */,
+				8C6CD6762F2E892200A51DE2 /* GoogleMobileAds */,
 			);
 			productName = "AR Haber";
 			productReference = 8C33E3472D52C93700EDB6BB /* AR Haber.app */;
@@ -231,7 +231,7 @@
 			mainGroup = 8C33E33E2D52C93700EDB6BB;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				8CAB338F2F27024300798468 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */,
+				8C6CD6752F2E892200A51DE2 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 8C33E3482D52C93700EDB6BB /* Products */;
@@ -314,7 +314,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = "AR Haber/AR_Haber.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 13;
+				CURRENT_PROJECT_VERSION = 14;
 				DEVELOPMENT_ASSET_PATHS = "\"AR Haber/Preview Content\"";
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_PREVIEWS = YES;
@@ -347,7 +347,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2.3;
+				MARKETING_VERSION = 2.4;
 				PRODUCT_BUNDLE_IDENTIFIER = "AR-Software-Consultancy.AR-Haber";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -363,7 +363,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = "AR Haber/AR_Haber.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 13;
+				CURRENT_PROJECT_VERSION = 14;
 				DEVELOPMENT_ASSET_PATHS = "\"AR Haber/Preview Content\"";
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_PREVIEWS = YES;
@@ -396,7 +396,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2.3;
+				MARKETING_VERSION = 2.4;
 				PRODUCT_BUNDLE_IDENTIFIER = "AR-Software-Consultancy.AR-Haber";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -638,7 +638,7 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		8CAB338F2F27024300798468 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */ = {
+		8C6CD6752F2E892200A51DE2 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/googleads/swift-package-manager-google-mobile-ads.git";
 			requirement = {
@@ -649,9 +649,9 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		8CAB33902F27024300798468 /* GoogleMobileAds */ = {
+		8C6CD6762F2E892200A51DE2 /* GoogleMobileAds */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 8CAB338F2F27024300798468 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */;
+			package = 8C6CD6752F2E892200A51DE2 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */;
 			productName = GoogleMobileAds;
 		};
 /* End XCSwiftPackageProductDependency section */
