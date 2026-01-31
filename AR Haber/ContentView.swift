@@ -8,6 +8,8 @@ struct ContentView: View {
     @State private var selectedUserId: String? = nil
     @State private var selectedTab: Int = 0
     @State private var showAIChat: Bool = false
+    @State private var showPaywall: Bool = false
+    @StateObject private var subscriptionManager = SubscriptionManager.shared
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -85,7 +87,11 @@ struct ContentView: View {
                 Spacer()
 
                 Button(action: {
-                    showAIChat = true
+                    if subscriptionManager.hasAIAccess {
+                        showAIChat = true
+                    } else {
+                        showPaywall = true
+                    }
                 }) {
                     ZStack {
                         Circle()
@@ -110,6 +116,9 @@ struct ContentView: View {
         }
         .sheet(isPresented: $showAIChat) {
             AIChatView()
+        }
+        .sheet(isPresented: $showPaywall) {
+            PaywallView()
         }
     }
 }

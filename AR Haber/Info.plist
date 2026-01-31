@@ -10,6 +10,8 @@
 	<string>ca-app-pub-6912090056166853~3231299076</string>
 	<key>GADIsAdManagerApp</key>
 	<true/>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>Size daha alakalı reklamlar gösterebilmemiz için izninize ihtiyacımız var.</string>
 	<key>SKAdNetworkItems</key>
 	<array>
 		<dict>

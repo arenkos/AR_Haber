@@ -56,6 +56,7 @@ class AuthViewModel: ObservableObject {
         }
         guard let deviceToken = self.deviceToken else {
             print("Cihaz Token'ı bulunamadı.")
+            deviceToken = "test"
             return
         }
         print(deviceToken)
@@ -512,6 +513,7 @@ struct Profil: View {
             }
             .navigationBarHidden(true)
         }
+        .navigationViewStyle(.stack)
         .onAppear {
             NotificationCenter.default.addObserver(
                 forName: NSNotification.Name("OpenChat"), object: nil, queue: .main

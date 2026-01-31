@@ -506,6 +506,8 @@ struct OfflineNewsListView: View {
     @ObservedObject var offlineNewsManager = OfflineNewsManager.shared
     @State private var selectedWebNews: OfflineNews?  // Haber sayfası için
     @State private var selectedSummaryNews: OfflineNews?  // Özet için ayrı state
+    @State private var showPaywall = false
+    @StateObject private var subscriptionManager = SubscriptionManager.shared
 
     var filteredNews: [OfflineNews] {
         if searchText.isEmpty {
@@ -550,7 +552,11 @@ struct OfflineNewsListView: View {
                             selectedWebNews = news
                         },
                         onSummaryTap: {
-                            selectedSummaryNews = news
+                            if subscriptionManager.hasAIAccess {
+                                selectedSummaryNews = news
+                            } else {
+                                showPaywall = true
+                            }
                         },
                         onDelete: {
                             offlineNewsManager.deleteNews(news)
@@ -576,7 +582,11 @@ struct OfflineNewsListView: View {
                 )
             }
         }
+        .navigationViewStyle(.stack)
         .navigationTitle("Kaydedilen Haberler")
+        .sheet(isPresented: $showPaywall) {
+            PaywallView()
+        }
     }
     func deleteNews(_ news: OfflineNews) {
         offlineNewsManager.deleteNews(news)

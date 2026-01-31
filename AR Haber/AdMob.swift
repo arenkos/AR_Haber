@@ -5,26 +5,25 @@
 //  Created by Aren Koş on 7.02.2025.
 //
 
-import SwiftUI
-import WebKit
 import Combine
 import GoogleMobileAds
-
+import SwiftUI
+import WebKit
 
 // AdConstants'ı güncelleyelim
 struct AdConstants {
     static let appID = "ca-app-pub-6912090056166853~3231299076"
-    
+
     // Test reklamları için
     static let testBannerID = "ca-app-pub-3940256099942544/2934735716"
     static let testInterstitialID = "ca-app-pub-3940256099942544/4411468910"
-    
+
     // Gerçek reklamlar için
-    static let bannerAdUnitID = "ca-app-pub-6912090056166853/1918217405"
-    static let interstitialAdUnitID = "ca-app-pub-6912090056166853/1918217405"
-    
+    static let bannerAdUnitID = "ca-app-pub-6912090056166853/9706978010"
+    static let interstitialAdUnitID = "ca-app-pub-6912090056166853/9706978010"
+
     static let requestDelay: TimeInterval = 10.0
-    
+
     // Kullanılacak reklam kimliklerini seç
     /*static var currentBannerID: String {
         #if DEBUG
@@ -41,7 +40,7 @@ struct AdConstants {
         return interstitialAdUnitID
         #endif
     }*/
-    
+
     static var currentBannerID: String {
         return bannerAdUnitID
     }
@@ -51,56 +50,69 @@ struct AdConstants {
     }
 }
 
+// MARK: - Smart Ad Banner (Abonelik Kontrolü ile)
+struct SmartAdBannerView: View {
+    @StateObject private var subscriptionManager = SubscriptionManager.shared
+
+    var body: some View {
+        if !subscriptionManager.hasAdFreeAccess {
+            AdBannerView()
+        }
+        // Abone ise reklam gösterilmez
+    }
+}
+
 // AdBannerView'ı güncelleyelim
 struct AdBannerView: UIViewRepresentable {
     let adUnitID = AdConstants.currentBannerID
-    
+
     func makeUIView(context: Context) -> UIView {
         let containerView = UIView()
-        let screenWidth = UIScreen.main.bounds.width // Ekran genişliğini al
-        containerView.frame = CGRect(origin: .zero, size: CGSize(width: screenWidth, height: 200)) // Ekran genişliğini kullan
-        
+        let screenWidth = UIScreen.main.bounds.width  // Ekran genişliğini al
+        containerView.frame = CGRect(origin: .zero, size: CGSize(width: screenWidth, height: 200))  // Ekran genişliğini kullan
+
         let bannerView = BannerView()
         bannerView.adSize = AdSizeBanner
         bannerView.adUnitID = adUnitID
         bannerView.delegate = context.coordinator
-        
+
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-           let rootViewController = windowScene.windows.first?.rootViewController {
+            let rootViewController = windowScene.windows.first?.rootViewController
+        {
             bannerView.rootViewController = rootViewController
         }
-        
+
         containerView.addSubview(bannerView)
         bannerView.translatesAutoresizingMaskIntoConstraints = false
-        
+
         // Kenarlarda boşluk bırakmak için 20 birim boşluk ekleyelim
         NSLayoutConstraint.activate([
             bannerView.centerXAnchor.constraint(equalTo: containerView.centerXAnchor),
             bannerView.centerYAnchor.constraint(equalTo: containerView.centerYAnchor),
-            bannerView.widthAnchor.constraint(equalTo: containerView.widthAnchor, constant: -40), // 20 birim sağdan ve soldan boşluk
-            bannerView.heightAnchor.constraint(equalToConstant: 200)
+            bannerView.widthAnchor.constraint(equalTo: containerView.widthAnchor, constant: -40),  // 20 birim sağdan ve soldan boşluk
+            bannerView.heightAnchor.constraint(equalToConstant: 200),
         ])
-        
+
         // Reklam yükle
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
             let request = Request()
             bannerView.load(request)
         }
-        
+
         return containerView
     }
-    
+
     func updateUIView(_ uiView: UIView, context: Context) {}
-    
+
     func makeCoordinator() -> Coordinator {
         Coordinator()
     }
-    
+
     class Coordinator: NSObject, BannerViewDelegate {
         func bannerViewDidReceiveAd(_ bannerView: BannerView) {
             print("Banner reklam yüklendi")
         }
-        
+
         func bannerView(_ bannerView: BannerView, didFailToReceiveAdWithError error: Error) {
             print("Banner reklam yüklenemedi: \(error.localizedDescription)")
         }
@@ -110,47 +122,47 @@ struct AdBannerView: UIViewRepresentable {
 // GADBannerViewController'ı güncelleyelim
 struct GADBannerViewController: UIViewControllerRepresentable {
     let adUnitID = AdConstants.currentBannerID
-    
+
     func makeUIViewController(context: Context) -> UIViewController {
         let viewController = UIViewController()
         viewController.view.frame = CGRect(origin: .zero, size: CGSize(width: 320, height: 50))
-        
+
         let bannerView = BannerView()
         bannerView.adSize = AdSizeBanner
         bannerView.adUnitID = adUnitID
         bannerView.rootViewController = viewController
         bannerView.delegate = context.coordinator
-        
+
         viewController.view.addSubview(bannerView)
         bannerView.translatesAutoresizingMaskIntoConstraints = false
-        
+
         NSLayoutConstraint.activate([
             bannerView.centerXAnchor.constraint(equalTo: viewController.view.centerXAnchor),
             bannerView.centerYAnchor.constraint(equalTo: viewController.view.centerYAnchor),
             bannerView.widthAnchor.constraint(equalToConstant: 320),
-            bannerView.heightAnchor.constraint(equalToConstant: 50)
+            bannerView.heightAnchor.constraint(equalToConstant: 50),
         ])
-        
+
         // Reklam yüklemeyi geciktir
         DispatchQueue.main.asyncAfter(deadline: .now() + AdConstants.requestDelay) {
             let request = Request()
             bannerView.load(request)
         }
-        
+
         return viewController
     }
-    
+
     func makeCoordinator() -> Coordinator {
         Coordinator()
     }
-    
+
     func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}
-    
+
     class Coordinator: NSObject, BannerViewDelegate {
         func bannerViewDidReceiveAd(_ bannerView: BannerView) {
             print("Banner reklam yüklendi")
         }
-        
+
         func bannerView(_ bannerView: BannerView, didFailToReceiveAdWithError error: Error) {
             print("Banner reklam yüklenemedi: \(error.localizedDescription)")
         }
