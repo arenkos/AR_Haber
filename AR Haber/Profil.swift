@@ -5,19 +5,18 @@
 //  Created by Aren Koş on 7.02.2025.
 //
 
-
-import SwiftUI
-import CommonCrypto
-import WebKit
 import Combine
+import CommonCrypto
 import GoogleMobileAds
+import SwiftUI
+import WebKit
 
 class AuthViewModel: ObservableObject {
     var offlineNewsManager = OfflineNewsManager.shared
     @Published var isLoggedIn = false
     @Published var user: User? = nil
     @Published var errorMessage: String = ""
-    static let shared = AuthViewModel() // Singleton
+    static let shared = AuthViewModel()  // Singleton
 
     @Published var deviceToken: String? {
         didSet {
@@ -38,7 +37,7 @@ class AuthViewModel: ObservableObject {
             print("✅ AuthViewModel içinde token güncellendi: \(token)")
         }
     }
-    
+
     func sha256(_ string: String) -> String {
         if let data = string.data(using: .utf8) {
             var hash = [UInt8](repeating: 0, count: Int(CC_SHA256_DIGEST_LENGTH))
@@ -49,7 +48,7 @@ class AuthViewModel: ObservableObject {
         }
         return ""
     }
-    
+
     func login(username: String, password: String) {
         guard let url = URL(string: "https://armedya.aryazilimdanismanlik.com/login.php") else {
             self.errorMessage = "Geçersiz URL"
@@ -64,19 +63,19 @@ class AuthViewModel: ObservableObject {
         let parameters: [String: String] = [
             "username": username,
             "password": hashedpassword,
-            "device_token": deviceToken
+            "device_token": deviceToken,
         ]
-        
+
         guard let postData = try? JSONSerialization.data(withJSONObject: parameters) else {
             self.errorMessage = "Veri formatı hatalı"
             return
         }
-        
+
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = postData
-        
+
         URLSession.shared.dataTask(with: request) { data, response, error in
             DispatchQueue.main.async {
                 if let error = error {
@@ -93,12 +92,12 @@ class AuthViewModel: ObservableObject {
                 var cleanedData = data
                 if let responseString = String(data: data, encoding: .utf8) {
                     print("Sunucu Yanıtı (Ham): \(responseString)")
-                    
+
                     // JSON'un başlangıcını bul ('{' karakteri)
                     if let jsonStartIndex = responseString.firstIndex(of: "{") {
                         let cleanedString = String(responseString[jsonStartIndex...])
                         print("Temizlenmiş Yanıt: \(cleanedString)")
-                        
+
                         if let cleanedDataFromString = cleanedString.data(using: .utf8) {
                             cleanedData = cleanedDataFromString
                         }
@@ -106,19 +105,23 @@ class AuthViewModel: ObservableObject {
                 }
 
                 do {
-                    if let json = try JSONSerialization.jsonObject(with: cleanedData, options: []) as? [String: Any] {
+                    if let json = try JSONSerialization.jsonObject(with: cleanedData, options: [])
+                        as? [String: Any]
+                    {
                         if let status = json["status"] as? String, status == "success" {
                             let email = json["mail"] as? String ?? ""
                             let ad_soyad = json["ad_soyad"] as? String ?? ""
                             let telefon = json["telefon"] as? String ?? ""
                             let username = json["username"] as? String ?? ""
-                            
-                            let loggedInUser = User(email: email, telefon: telefon, username: username, ad_soyad: ad_soyad)
-                            
+
+                            let loggedInUser = User(
+                                email: email, telefon: telefon, username: username,
+                                ad_soyad: ad_soyad)
+
                             self.user = loggedInUser
                             self.isLoggedIn = true
                             self.errorMessage = ""
-                            
+
                             // Kullanıcı oturumunu kaydet
                             self.saveUserSession(user: loggedInUser)
                         } else {
@@ -134,11 +137,12 @@ class AuthViewModel: ObservableObject {
             }
         }.resume()
     }
-    
-    func kayit(username: String, ad_soyad: String, telefon: String, email: String, password: String) {
+
+    func kayit(username: String, ad_soyad: String, telefon: String, email: String, password: String)
+    {
         guard let url = URL(string: "https://armedya.aryazilimdanismanlik.com/kayit.php") else {
             self.errorMessage = "Geçersiz URL"
-            self.showAlert(message: self.errorMessage) // self kullanıldı
+            self.showAlert(message: self.errorMessage)  // self kullanıldı
             return
         }
         let hashedpassword = sha256(password)
@@ -147,12 +151,12 @@ class AuthViewModel: ObservableObject {
             "password": hashedpassword,
             "ad_soyad": ad_soyad,
             "mail": email,
-            "telefon": telefon
+            "telefon": telefon,
         ]
 
         guard let postData = try? JSONSerialization.data(withJSONObject: parameters) else {
             self.errorMessage = "Veri formatı hatalı"
-            self.showAlert(message: self.errorMessage) // self kullanıldı
+            self.showAlert(message: self.errorMessage)  // self kullanıldı
             return
         }
 
@@ -164,28 +168,31 @@ class AuthViewModel: ObservableObject {
         Task {
             do {
                 let (data, response) = try await URLSession.shared.data(for: request)
-                
-                guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+
+                guard let httpResponse = response as? HTTPURLResponse,
+                    httpResponse.statusCode == 200
+                else {
                     DispatchQueue.main.async {
                         self.errorMessage = "Geçersiz yanıt"
-                        self.showAlert(message: self.errorMessage) // self kullanıldı
+                        self.showAlert(message: self.errorMessage)  // self kullanıldı
                     }
                     return
                 }
-                
+
                 if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
                     if let status = json["status"] as? String {
                         DispatchQueue.main.async {
                             switch status {
                             case "success":
                                 self.errorMessage = "Kayıt Başarılı"
-                                self.showAlert(message: self.errorMessage) // self kullanıldı
+                                self.showAlert(message: self.errorMessage)  // self kullanıldı
                             case "exist":
                                 self.errorMessage = "Bu bilgilerle kayıtlı kullanıcı zaten var!"
-                                self.showAlert(message: self.errorMessage) // self kullanıldı
+                                self.showAlert(message: self.errorMessage)  // self kullanıldı
                             default:
-                                self.errorMessage = json["message"] as? String ?? "Bilinmeyen hata oluştu"
-                                self.showAlert(message: self.errorMessage) // self kullanıldı
+                                self.errorMessage =
+                                    json["message"] as? String ?? "Bilinmeyen hata oluştu"
+                                self.showAlert(message: self.errorMessage)  // self kullanıldı
                             }
                         }
                     }
@@ -193,7 +200,7 @@ class AuthViewModel: ObservableObject {
             } catch {
                 DispatchQueue.main.async {
                     self.errorMessage = "Bağlantı hatası: \(error.localizedDescription)"
-                    self.showAlert(message: self.errorMessage) // self kullanıldı
+                    self.showAlert(message: self.errorMessage)  // self kullanıldı
                 }
             }
         }
@@ -201,7 +208,8 @@ class AuthViewModel: ObservableObject {
 
     // Alert gösteren fonksiyon
     func showAlert(message: String) {
-        let alertController = UIAlertController(title: "Bilgi", message: message, preferredStyle: .alert)
+        let alertController = UIAlertController(
+            title: "Bilgi", message: message, preferredStyle: .alert)
         let okAction = UIAlertAction(title: "Tamam", style: .default, handler: nil)
         alertController.addAction(okAction)
         // Eğer bu fonksiyonu bir ViewController içinde çağırıyorsanız
@@ -215,14 +223,18 @@ class AuthViewModel: ObservableObject {
             print("Kullanıcı veya device token bulunamadı")
             return
         }
-        
-        let urlString = "https://aryazilimdanismanlik.com/armedya/logout.php?user=\(user.username)&device_token=\(deviceToken)"
-        
-        guard let url = URL(string: urlString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)!) else {
+
+        let urlString =
+            "https://aryazilimdanismanlik.com/armedya/logout.php?user=\(user.username)&device_token=\(deviceToken)"
+
+        guard
+            let url = URL(
+                string: urlString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)!)
+        else {
             print("Geçersiz URL")
             return
         }
-        
+
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
 
@@ -231,13 +243,15 @@ class AuthViewModel: ObservableObject {
                 print("Çıkış hatası: \(error.localizedDescription)")
                 return
             }
-            
+
             guard let data = data else {
                 print("Geçersiz veri alındı")
                 return
             }
 
-            if let json = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
+            if let json = try? JSONSerialization.jsonObject(with: data, options: [])
+                as? [String: Any]
+            {
                 if let success = json["success"] as? Bool, success {
                     print("Device token başarıyla silindi")
                 } else {
@@ -253,7 +267,7 @@ class AuthViewModel: ObservableObject {
         offlineNewsManager.deleteAllSavedNews()
         clearUserSession()
     }
-    
+
     private func saveUserSession(user: User) {
         UserDefaults.standard.setValue(user.email, forKey: "email")
         UserDefaults.standard.setValue(user.telefon, forKey: "telefon")
@@ -285,7 +299,7 @@ class AuthViewModel: ObservableObject {
     }
 }
 
-struct User{
+struct User {
     let email: String
     let telefon: String
     let username: String
@@ -294,6 +308,29 @@ struct User{
 
 class Control: ObservableObject {
     @Published var notification = false
+}
+
+// MARK: - Profil Sekmesi Enum
+enum ProfileTab: Int, CaseIterable {
+    case ozelAkis = 0
+    case begenilenler = 1
+    case kaydedilenler = 2
+
+    var title: String {
+        switch self {
+        case .ozelAkis: return "Özel Akış"
+        case .begenilenler: return "Beğenilenler"
+        case .kaydedilenler: return "Kaydedilenler"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .ozelAkis: return "square.grid.2x2"
+        case .begenilenler: return "heart.fill"
+        case .kaydedilenler: return "bookmark.fill"
+        }
+    }
 }
 
 struct Profil: View {
@@ -310,87 +347,110 @@ struct Profil: View {
     @State private var errorMessage = ""
     @State private var selectedUserId: String? = nil
     @State private var isChatActive: Bool = false
+    @State private var selectedTab: ProfileTab = .ozelAkis
     private var usr: String?
-    
+
     var body: some View {
         NavigationView {
-            VStack(spacing: 20) {
+            VStack(spacing: 0) {
                 if authViewModel.isLoggedIn, let user = authViewModel.user {
-                    Text("Profil Bilgileri")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-                        .padding(.top, 40)
+                    // MARK: - Header
                     HStack {
-                        NavigationLink(destination: AccountSettingsView()) {
-                            VStack {
-                                Image(systemName: "gear")
-                                    .font(.largeTitle)
-                                    .padding()
-                                Text("Hesap Ayarları")
-                                    .font(.subheadline)
+                        // Sol: Ad-Soyad + Ayarlar
+                        HStack(spacing: 8) {
+                            Text(user.ad_soyad)
+                                .font(.title2)
+                                .fontWeight(.bold)
+
+                            NavigationLink(destination: AccountSettingsView()) {
+                                Image(systemName: "gearshape.fill")
+                                    .font(.title3)
+                                    .foregroundColor(.gray)
                             }
-                            .frame(width: 150, height: 150)
-                            .background(Color.blue.opacity(0.2))
-                            .cornerRadius(10)
                         }
 
-                        NavigationLink(destination: LikesView()) {
-                            VStack {
-                                Image(systemName: "star.fill")
-                                    .font(.largeTitle)
-                                    .padding()
-                                Text("Beğenilenler")
-                                    .font(.subheadline)
-                            }
-                            .frame(width: 150, height: 150)
-                            .background(Color.green.opacity(0.2))
-                            .cornerRadius(10)
+                        Spacer()
+
+                        // Sağ: Mesajlar
+                        NavigationLink(
+                            destination: ChatListView(senderId: user.username, newsItem: nil)
+                        ) {
+                            Image(systemName: "bubble.left.and.bubble.right.fill")
+                                .font(.title2)
+                                .foregroundColor(.blue)
                         }
                     }
-                    .padding(.horizontal)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
 
-                    HStack {
-                        NavigationLink(destination: ChatListView(senderId: user.username, newsItem: nil)) {
-                            VStack {
-                                Image(systemName: "bubble.left.and.bubble.right.fill")
-                                    .font(.largeTitle)
-                                    .padding()
-                                Text("Mesajlar")
-                                    .font(.subheadline)
-                            }
-                            .frame(width: 150, height: 150)
-                            .background(Color.orange.opacity(0.2))
-                            .cornerRadius(10)
-                        }
+                    Divider()
 
-                        NavigationLink(destination: OfflineNewsListView()) {
-                            VStack {
-                                Image(systemName: "archivebox.fill")  // Daha uygun bir simge
-                                    .font(.largeTitle)
-                                    .padding()
-                                Text("Kaydedilen Haberler")
-                                    .font(.subheadline)
+                    // MARK: - Tab Bar (Instagram Style)
+                    HStack(spacing: 0) {
+                        ForEach(ProfileTab.allCases, id: \.rawValue) { tab in
+                            VStack(spacing: 8) {
+                                Image(systemName: tab.icon)
+                                    .font(.system(size: 22))
+                                    .foregroundColor(selectedTab == tab ? .blue : .gray)
+
+                                Text(tab.title)
+                                    .font(.caption)
+                                    .foregroundColor(selectedTab == tab ? .blue : .gray)
+
+                                // Seçili sekme altı çizgisi
+                                Rectangle()
+                                    .fill(selectedTab == tab ? Color.blue : Color.clear)
+                                    .frame(height: 2)
                             }
-                            .frame(width: 150, height: 150)
-                            .background(Color.purple.opacity(0.2))
-                            .cornerRadius(10)
+                            .frame(maxWidth: .infinity)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    selectedTab = tab
+                                }
+                            }
                         }
                     }
-                    .padding(.horizontal)
+                    .padding(.top, 8)
 
-                    Button(action: { authViewModel.logout() }) {
-                        Text("Çıkış Yap")
+                    // MARK: - Tab Content
+                    TabView(selection: $selectedTab) {
+                        // Özel Akış
+                        Ozel_Akis()
+                            .tag(ProfileTab.ozelAkis)
+
+                        // Beğenilenler
+                        LikesView()
+                            .tag(ProfileTab.begenilenler)
+
+                        // Kaydedilenler
+                        OfflineNewsListView()
+                            .tag(ProfileTab.kaydedilenler)
+                    }
+                    .tabViewStyle(.page(indexDisplayMode: .never))
+
+                    Divider()
+
+                    // MARK: - Footer
+                    VStack(spacing: 12) {
+                        Button(action: { authViewModel.logout() }) {
+                            HStack {
+                                Image(systemName: "rectangle.portrait.and.arrow.right")
+                                Text("Çıkış Yap")
+                            }
                             .font(.headline)
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
-                            .padding()
+                            .padding(.vertical, 12)
                             .background(Color.red)
                             .cornerRadius(10)
-                            .padding(.horizontal)
+                        }
+                        .padding(.horizontal, 16)
                     }
-                    .padding(.bottom, 40)
+                    .padding(.vertical, 8)
+
                 } else {
-                    // Giriş yapmamış kullanıcı için kayıt/giriş formu
+                    // MARK: - Giriş Yapmamış Kullanıcı
                     VStack(spacing: 20) {
                         Text(isLogin ? "Giriş Yap" : "Kayıt Ol")
                             .font(.largeTitle)
@@ -407,8 +467,9 @@ struct Profil: View {
                             .textFieldStyle(RoundedBorderTextFieldStyle())
                             .padding(.horizontal)
                             .autocapitalization(.none)
-                            .onChange(of: username) { newValue in
-                                username = newValue.lowercased().replacingOccurrences(of: " ", with: "")
+                            .onChange(of: username) { oldValue, newValue in
+                                username = newValue.lowercased().replacingOccurrences(
+                                    of: " ", with: "")
                             }
 
                         SecureField("Şifre", text: $password)
@@ -438,46 +499,54 @@ struct Profil: View {
                         }
 
                         Button(action: { isLogin.toggle() }) {
-                            Text(isLogin ? "Hesabın yok mu? Kayıt ol" : "Zaten hesabın var mı? Giriş yap")
-                                .foregroundColor(.blue)
+                            Text(
+                                isLogin
+                                    ? "Hesabın yok mu? Kayıt ol" : "Zaten hesabın var mı? Giriş yap"
+                            )
+                            .foregroundColor(.blue)
                         }
                         .padding(.bottom, 40)
                     }
+                    .padding()
                 }
             }
-            .padding()
+            .navigationBarHidden(true)
         }
-        .onAppear(){
-            NotificationCenter.default.addObserver(forName: NSNotification.Name("OpenChat"), object: nil, queue: .main) { notification in
-                if let userInfo = notification.userInfo, let userId = userInfo["userId"] as? String {
+        .onAppear {
+            NotificationCenter.default.addObserver(
+                forName: NSNotification.Name("OpenChat"), object: nil, queue: .main
+            ) { notification in
+                if let userInfo = notification.userInfo, let userId = userInfo["userId"] as? String
+                {
                     self.selectedUserId = userId
-                    self.isChatActive = true // Mesajlaşma sayfasına yönlendirme yapılıyor
+                    self.isChatActive = true
                 }
             }
         }
     }
-    
+
     func handleAuth() {
         errorMessage = ""
-        
+
         if username.isEmpty || password.isEmpty {
             errorMessage = "Kullanıcı adı ve şifre gereklidir."
             return
         }
-        
+
         if !isLogin && password != confirmPassword {
             errorMessage = "Şifreler uyuşmuyor."
             return
         }
-        
-        if isLogin{
+
+        if isLogin {
             authViewModel.login(username: username, password: password)
         } else {
-            //authViewModel.kayit(username: username, email: email, password: password, ad_soyad: ad_soyad)
-            authViewModel.kayit(username: username, ad_soyad: ad_soyad, telefon: telefon, email: email, password: password)
+            authViewModel.kayit(
+                username: username, ad_soyad: ad_soyad, telefon: telefon, email: email,
+                password: password)
         }
     }
-} 
+}
 
 /*struct Profil_Previews: PreviewProvider {
     static var previews: some View {

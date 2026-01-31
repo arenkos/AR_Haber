@@ -1,9 +1,7 @@
-import SwiftUI
-import SwiftUI
-import WebKit
 import Combine
 import GoogleMobileAds
-
+import SwiftUI
+import WebKit
 
 struct ContentView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
@@ -13,98 +11,102 @@ struct ContentView: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
-        TabView(selection: $selectedTab) {
-            Genel_Akis()
-                .tabItem {
-                    Label("Ana sayfa", systemImage: "house.fill")
-                        .frame(maxWidth: .infinity)
-                        .layoutPriority(1)
-                }
-                .tag(0)
+            TabView(selection: $selectedTab) {
+                Genel_Akis()
+                    .tabItem {
+                        Label("Ana sayfa", systemImage: "house.fill")
+                            .frame(maxWidth: .infinity)
+                            .layoutPriority(1)
+                    }
+                    .tag(0)
 
-            if authViewModel.isLoggedIn {
-                Kaynak()
-                    .tabItem {
-                        Label("Kaynak", systemImage: "newspaper.fill")
-                            .frame(maxWidth: .infinity)
-                            .layoutPriority(1)
-                    }
-                    .tag(1)
-                
-                Kategori()
-                    .tabItem {
-                        Label("Kategori", systemImage: "square.grid.2x2.fill")
-                            .frame(maxWidth: .infinity)
-                            .layoutPriority(1)
-                    }
-                    .tag(2)
-                
-                Ozel_Akis()
-                    .tabItem {
-                        Label("Özel", systemImage: "star.fill")
-                            .frame(maxWidth: .infinity)
-                            .layoutPriority(1)
-                    }
-                    .tag(3)
-
-                /*if let user = authViewModel.user {
-                    ChatListView(senderId: user.username, receiverId: selectedUserId)
+                if authViewModel.isLoggedIn {
+                    Kaynak()
                         .tabItem {
-                            Label("Mesaj", systemImage: "bubble.fill")
+                            Label("Kaynak", systemImage: "newspaper.fill")
                                 .frame(maxWidth: .infinity)
                                 .layoutPriority(1)
                         }
-                        .tag(4)
-                }*/
+                        .tag(1)
+
+                    Kategori()
+                        .tabItem {
+                            Label("Kategori", systemImage: "square.grid.2x2.fill")
+                                .frame(maxWidth: .infinity)
+                                .layoutPriority(1)
+                        }
+                        .tag(2)
+                    /*
+                    Ozel_Akis()
+                        .tabItem {
+                            Label("Özel", systemImage: "star.fill")
+                                .frame(maxWidth: .infinity)
+                                .layoutPriority(1)
+                        }
+                        .tag(3)*/
+
+                    /*if let user = authViewModel.user {
+                        ChatListView(senderId: user.username, receiverId: selectedUserId)
+                            .tabItem {
+                                Label("Mesaj", systemImage: "bubble.fill")
+                                    .frame(maxWidth: .infinity)
+                                    .layoutPriority(1)
+                            }
+                            .tag(4)
+                    }*/
+                }
+
+                Profil()
+                    .tabItem {
+                        Label("Profil", systemImage: "person.fill")
+                            .frame(maxWidth: .infinity)
+                            .layoutPriority(1)
+                    }
+                    .tag(5)
+            }
+            .accentColor(.blue)
+            .onAppear {
+                NotificationCenter.default.addObserver(
+                    forName: NSNotification.Name("OpenChat"), object: nil, queue: .main
+                ) { notification in
+                    if let userInfo = notification.userInfo,
+                        let userId = userInfo["userId"] as? String
+                    {
+                        self.selectedUserId = userId
+                        self.selectedTab = 5  // Mesaj sekmesine yönlendir
+                        let control = Control()
+                        control.notification = true
+                    }
+                }
             }
 
-            Profil()
-                .tabItem {
-                    Label("Profil", systemImage: "person.fill")
-                        .frame(maxWidth: .infinity)
-                        .layoutPriority(1)
-                }
-                .tag(5)
-        }
-        .accentColor(.blue)
-        .onAppear {
-            NotificationCenter.default.addObserver(forName: NSNotification.Name("OpenChat"), object: nil, queue: .main) { notification in
-                if let userInfo = notification.userInfo, let userId = userInfo["userId"] as? String {
-                    self.selectedUserId = userId
-                    self.selectedTab = 5 // Mesaj sekmesine yönlendir
-                    let control = Control()
-                    control.notification = true
-                }
-            }
-        }
-        
-        // Ortada yuvarlak AI Chat butonu
-        VStack {
-            Spacer()
-            
-            Button(action: {
-                showAIChat = true
-            }) {
-                ZStack {
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [.blue, .purple],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
+            // Ortada yuvarlak AI Chat butonu
+            VStack {
+                Spacer()
+
+                Button(action: {
+                    showAIChat = true
+                }) {
+                    ZStack {
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [.blue, .purple],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
                             )
-                        )
-                        .frame(width: 60, height: 60)
-                        .shadow(color: .blue.opacity(0.3), radius: 8, x: 0, y: 4)
-                    
-                    Image(systemName: "sparkles")
-                        .font(.system(size: 24, weight: .semibold))
-                        .foregroundColor(.white)
+                            .frame(width: 60, height: 60)
+                            .shadow(color: .blue.opacity(0.3), radius: 8, x: 0, y: 4)
+
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 24, weight: .semibold))
+                            .foregroundColor(.white)
+                    }
                 }
+                .padding(.bottom, 8)
             }
-            .padding(.bottom, 8)
-        }
-        .ignoresSafeArea(.keyboard)
+            .ignoresSafeArea(.keyboard)
         }
         .sheet(isPresented: $showAIChat) {
             AIChatView()
@@ -115,14 +117,16 @@ struct ContentView: View {
 struct WebViewContainer: UIViewRepresentable {
     let urlString: String
     let onClose: () -> Void
-    
+    var hideHeader: Bool = false
+
     func makeUIView(context: Context) -> WKWebView {
         let webView = WKWebView()
         webView.navigationDelegate = context.coordinator
         return webView
     }
-    
+
     func updateUIView(_ uiView: WKWebView, context: Context) {
+        context.coordinator.hideHeader = hideHeader
         if let url = URL(string: urlString) {
             print("📱 Loading URL: \(url.absoluteString)")
             uiView.load(URLRequest(url: url))
@@ -130,31 +134,79 @@ struct WebViewContainer: UIViewRepresentable {
             print("❌ Invalid URL: \(urlString)")
         }
     }
-    
+
     static func dismantleUIView(_ uiView: WKWebView, coordinator: Coordinator) {
         uiView.stopLoading()
     }
-    
+
     func makeCoordinator() -> Coordinator {
-        Coordinator(onClose: onClose)
+        Coordinator(onClose: onClose, hideHeader: hideHeader)
     }
-    
+
     class Coordinator: NSObject, WKNavigationDelegate {
         let onClose: () -> Void
-        
-        init(onClose: @escaping () -> Void) {
+        var hideHeader: Bool
+
+        init(onClose: @escaping () -> Void, hideHeader: Bool = false) {
             self.onClose = onClose
+            self.hideHeader = hideHeader
         }
-        
+
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             print("✅ Page loaded successfully: \(webView.url?.absoluteString ?? "Unknown")")
+
+            // Header'ı gizle
+            if hideHeader {
+                let hideHeaderJS = """
+                        (function() {
+                            // Header, navbar ve footer elementlerini gizle
+                            var selectors = [
+                                'header', 'nav', 'navbar', '.header', '.navbar', '.nav',
+                                '#header', '#navbar', '#nav', '.site-header', '.top-bar',
+                                '.navigation', '#navigation', '.menu-bar', '.main-header',
+                                'footer', '.footer', '#footer', '.site-footer'
+                            ];
+                            
+                            selectors.forEach(function(selector) {
+                                var elements = document.querySelectorAll(selector);
+                                elements.forEach(function(el) {
+                                    el.style.display = 'none';
+                                });
+                            });
+                            
+                            // Body'nin padding-top ve margin-top'unu sıfırla
+                            document.body.style.paddingTop = '0';
+                            document.body.style.marginTop = '0';
+                            
+                            // Main content'i yukarı taşı
+                            var main = document.querySelector('main') || document.querySelector('.main') || document.querySelector('#main');
+                            if (main) {
+                                main.style.marginTop = '0';
+                                main.style.paddingTop = '0';
+                            }
+                        })();
+                    """
+
+                webView.evaluateJavaScript(hideHeaderJS) { _, error in
+                    if let error = error {
+                        print("❌ JavaScript error: \(error.localizedDescription)")
+                    } else {
+                        print("✅ Header hidden successfully")
+                    }
+                }
+            }
         }
-        
-        func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+
+        func webView(
+            _ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error
+        ) {
             print("❌ Navigation failed: \(error.localizedDescription)")
         }
-        
-        func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+
+        func webView(
+            _ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!,
+            withError error: Error
+        ) {
             print("❌ Provisional navigation failed: \(error.localizedDescription)")
             print("   URL: \(webView.url?.absoluteString ?? "Unknown")")
         }
@@ -163,7 +215,7 @@ struct WebViewContainer: UIViewRepresentable {
 
 struct SearchBar: View {
     @Binding var text: String
-    
+
     var body: some View {
         TextField("Search", text: $text)
             .padding(7)
@@ -182,10 +234,9 @@ struct SearchBar: View {
     }
 }
 
-
 struct Contentview_Previews: PreviewProvider {
     static var previews: some View {
-       ContentView()
+        ContentView()
     }
 }
 
@@ -197,7 +248,7 @@ struct AIChatView: View {
     @State private var isLoading: Bool = false
     @State private var typingTimer: Timer?
     @Environment(\.dismiss) var dismiss
-    
+
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
@@ -209,7 +260,7 @@ struct AIChatView: View {
                                 ChatBubble(message: $messages[index])
                                     .id(messages[index].id)
                             }
-                            
+
                             if isLoading {
                                 HStack {
                                     ProgressView()
@@ -231,7 +282,7 @@ struct AIChatView: View {
                         }
                     }
                 }
-                
+
                 // Input alanı
                 HStack(spacing: 12) {
                     TextField("Mesajınızı yazın...", text: $inputText, axis: .vertical)
@@ -240,7 +291,7 @@ struct AIChatView: View {
                         .background(Color(.systemGray6))
                         .cornerRadius(20)
                         .lineLimit(1...5)
-                    
+
                     Button(action: sendMessage) {
                         Image(systemName: "arrow.up.circle.fill")
                             .font(.system(size: 32))
@@ -274,18 +325,18 @@ struct AIChatView: View {
             }
         }
     }
-    
+
     private func sendMessage() {
         guard !inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
-        
+
         var userMessage = ChatMessage(content: inputText, isUser: true)
         userMessage.displayedContent = inputText
         messages.append(userMessage)
-        
+
         let messageToSend = inputText
         inputText = ""
         isLoading = true
-        
+
         // OpenAI servisini kullan
         OpenAIService().sendChatMessage(text: messageToSend) { response in
             isLoading = false
@@ -294,7 +345,7 @@ struct AIChatView: View {
                 aiMessage.displayedContent = ""
                 aiMessage.isTyping = true
                 messages.append(aiMessage)
-                
+
                 let messageIndex = messages.count - 1
                 startTypewriterEffect(for: messageIndex)
             } else {
@@ -307,14 +358,14 @@ struct AIChatView: View {
             }
         }
     }
-    
+
     private func startTypewriterEffect(for index: Int) {
         guard index < messages.count else { return }
-        
+
         let fullContent = messages[index].content
         let characters = Array(fullContent)
         var charIndex = 0
-        
+
         typingTimer = Timer.scheduledTimer(withTimeInterval: 0.02, repeats: true) { timer in
             if charIndex < characters.count {
                 messages[index].displayedContent.append(characters[charIndex])
@@ -338,39 +389,42 @@ struct ChatMessage: Identifiable {
 
 struct ChatBubble: View {
     @Binding var message: ChatMessage
-    
+
     var body: some View {
         HStack {
             if message.isUser { Spacer() }
-            
+
             VStack(alignment: message.isUser ? .trailing : .leading, spacing: 4) {
                 HStack(spacing: 4) {
-                    Text(message.displayedContent.isEmpty ? message.content : message.displayedContent)
-                        .padding(12)
-                        .background(message.isUser ? Color.blue : Color(.systemGray5))
-                        .foregroundColor(message.isUser ? .white : .primary)
-                        .cornerRadius(16)
-                    
+                    Text(
+                        message.displayedContent.isEmpty
+                            ? message.content : message.displayedContent
+                    )
+                    .padding(12)
+                    .background(message.isUser ? Color.blue : Color(.systemGray5))
+                    .foregroundColor(message.isUser ? .white : .primary)
+                    .cornerRadius(16)
+
                     // Typing cursor efekti
                     if !message.isUser && message.isTyping {
                         Text("▌")
                             .foregroundColor(.gray)
                             .font(.system(size: 16, weight: .bold))
                             .animation(
-                                Animation.easeInOut(duration: 0.5).repeatForever(autoreverses: true),
+                                Animation.easeInOut(duration: 0.5).repeatForever(
+                                    autoreverses: true),
                                 value: message.isTyping
                             )
                     }
                 }
-                
+
                 Text(message.timestamp, style: .time)
                     .font(.caption2)
                     .foregroundColor(.gray)
             }
             .frame(maxWidth: 280, alignment: message.isUser ? .trailing : .leading)
-            
+
             if !message.isUser { Spacer() }
         }
     }
 }
-
