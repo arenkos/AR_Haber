@@ -89,7 +89,7 @@ struct Genel_Akis: View {
                         print("   Başlık: \(news.baslik)")
                         print("   Kaynak: \(news.kaynak)")
                         print("   haber_url: '\(news.haber_url)'")
-                        print("   Açılacak URL: https://www.aryazilimdanismanlik.com/armedya/haber_detay.php?id=\(news.id)")
+                        print("   Açılacak URL: https://armedia.live/haber_detay.php?id=\(news.id)")
                         
                         showWebView = false
                         DispatchQueue.main.async {
@@ -146,7 +146,7 @@ struct Genel_Akis: View {
             .sheet(isPresented: $showCommentsView) {
                 if let selectedNews = selectedNewsManager.selectedNews,
                    let user = authViewModel.user {
-                    WebViewContainer(urlString: "https://www.aryazilimdanismanlik.com/armedya/yorumlar_mobil.php?id=\(selectedNews.id)&username=\(user.username)") {
+                    WebViewContainer(urlString: "https://armedia.live/yorumlar_mobil.php?id=\(selectedNews.id)&username=\(user.username)") {
                         showCommentsView = false
                     }
                     .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height-100) // Tam ekran genişlik
@@ -155,7 +155,7 @@ struct Genel_Akis: View {
             .sheet(isPresented: $showWebView) {
                 if let selectedNews = selectedNewsManager.selectedNews {
                     // Tıklanma kaydı - ID kullanarak
-                    WebViewContainer(urlString: "https://www.aryazilimdanismanlik.com/armedya/tiklanma.php?id=\(selectedNews.id)") {
+                    WebViewContainer(urlString: "https://armedia.live/tiklanma.php?id=\(selectedNews.id)") {
                         showWebView = false
                     }
                     .frame(width: 0, height: 0)
@@ -169,7 +169,7 @@ struct Genel_Akis: View {
                         }
                         // Aksi takdirde ID bazlı endpoint kullan
                         // NOT: Bu endpoint'i sunucuda oluşturmanız gerekebilir
-                        return "https://www.aryazilimdanismanlik.com/armedya/haber.php?id=\(selectedNews.id)"
+                        return "https://armedia.live/haber.php?id=\(selectedNews.id)"
                     }()
                     
                     WebViewContainer(urlString: newsURL) {
@@ -190,7 +190,7 @@ struct Genel_Akis: View {
     func loadUserReactions(completion: @escaping () -> Void = {}) {
         guard let user = authViewModel.user else { return }
         
-        let urlString = "https://www.aryazilimdanismanlik.com/armedya/load_user_reactions.php?user=\(user.username)"
+        let urlString = "https://armedia.live/load_user_reactions.php?user=\(user.username)"
         guard let url = URL(string: urlString) else {
             print("Invalid URL")
             return
@@ -274,7 +274,7 @@ struct Genel_Akis: View {
     
     func sendReactionRequest(newsID: Int, begen: Int, begenme: Int) {
         if let user = authViewModel.user{
-            guard let url = URL(string: "https://www.aryazilimdanismanlik.com/armedya/tepki_mobil.php?begenme=\(begenme)&begen=\(begen)&id=\(newsID)&user=\(user.username)") else { return }
+            guard let url = URL(string: "https://armedia.live/tepki_mobil.php?begenme=\(begenme)&begen=\(begen)&id=\(newsID)&user=\(user.username)") else { return }
             
             var request = URLRequest(url: url)
             request.httpMethod = "GET"

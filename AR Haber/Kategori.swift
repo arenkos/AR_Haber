@@ -44,7 +44,7 @@ struct Kategori: View {
     
     // Fetch categories from the server
     func fetchCategories() {
-        let urlString = "https://www.aryazilimdanismanlik.com/armedya/fetch_kategori.php"
+        let urlString = "https://armedia.live/fetch_kategori.php"
         guard let url = URL(string: urlString) else { return }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -80,7 +80,7 @@ struct Kategori: View {
         //saveSelectedCategories() // Save the updated categories to the database
         
         if let user = authViewModel.user {
-            let urlString = "https://www.aryazilimdanismanlik.com/armedya/arama_kategori.php?kategori=\(category)&user=\(user.username)"
+            let urlString = "https://armedia.live/arama_kategori.php?kategori=\(category)&user=\(user.username)"
             guard let url = URL(string: urlString) else { return }
             
             var request = URLRequest(url: url)
@@ -100,7 +100,7 @@ struct Kategori: View {
         let selectedCategoriesArray = Array(tappedCategories)
         let categoriesString = selectedCategoriesArray.joined(separator: ",")
         
-        let urlString = "https://www.aryazilimdanismanlik.com/armedya/save_tapped_categories.php"
+        let urlString = "https://armedia.live/save_tapped_categories.php"
         guard let url = URL(string: urlString) else { return }
         
         var request = URLRequest(url: url)
@@ -132,7 +132,7 @@ struct Kategori: View {
     func loadSelectedCategories() {
         guard let user = authViewModel.user else { return }
         
-        let urlString = "https://www.aryazilimdanismanlik.com/armedya/load_tapped_categories.php?user=\(user.username)"
+        let urlString = "https://armedia.live/load_tapped_categories.php?user=\(user.username)"
         guard let url = URL(string: urlString) else { return }
         
         let task = URLSession.shared.dataTask(with: url) { data, response, error in

@@ -84,7 +84,7 @@ class NewsSummaryManager: ObservableObject {
         guard
             let url = URL(
                 string:
-                    "https://www.aryazilimdanismanlik.com/armedya/ozet_olustur.php?id=\(newsItem.id)"
+                    "https://armedia.live/ozet_olustur.php?id=\(newsItem.id)"
             )
         else {
             loadingStates[newsItem.id] = false
@@ -233,7 +233,7 @@ class NewsViewModel: ObservableObject {
         isLoading = true
 
         var components = URLComponents(
-            string: "https://www.aryazilimdanismanlik.com/armedya/haberler_mobil.php")
+            string: "https://armedia.live/haberler_mobil.php")
         components?.queryItems = [
             URLQueryItem(name: "arama", value: arama),
             URLQueryItem(name: "carpan", value: String(currentPage)),
@@ -357,7 +357,7 @@ class NewsViewModel: ObservableObject {
         isLoading = true
 
         var components = URLComponents(
-            string: "https://www.aryazilimdanismanlik.com/armedya/haberler_mobil.php")
+            string: "https://armedia.live/haberler_mobil.php")
         components?.queryItems = [
             URLQueryItem(name: "arama", value: arama),
             URLQueryItem(name: "carpan", value: String(currentPage)),
@@ -459,7 +459,7 @@ class NewsViewModel: ObservableObject {
         isLoading = true
 
         var components = URLComponents(
-            string: "https://www.aryazilimdanismanlik.com/armedya/begenilen_haberler_mobil.php")
+            string: "https://armedia.live/begenilen_haberler_mobil.php")
         components?.queryItems = [
             URLQueryItem(name: "arama", value: arama),
             URLQueryItem(name: "carpan", value: String(currentPage)),
@@ -570,7 +570,7 @@ class NewsViewModel_eski: ObservableObject {
         isLoading = true
 
         let urlString =
-            "https://www.aryazilimdanismanlik.com/armedya/haberler_mobil.php?arama=\(arama)&carpan=\(currentPage)"
+            "https://armedia.live/haberler_mobil.php?arama=\(arama)&carpan=\(currentPage)"
         guard
             let encodedString = urlString.addingPercentEncoding(
                 withAllowedCharacters: .urlQueryAllowed),
@@ -627,7 +627,7 @@ class NewsViewModel_eski: ObservableObject {
         isLoading = true
 
         let urlString =
-            "https://www.aryazilimdanismanlik.com/armedya/haberler_mobil.php?arama=\(arama)&carpan=\(currentPage)&kaynak=\(kaynak)&kategori=\(kategori)"
+            "https://armedia.live/haberler_mobil.php?arama=\(arama)&carpan=\(currentPage)&kaynak=\(kaynak)&kategori=\(kategori)"
         guard
             let encodedString = urlString.addingPercentEncoding(
                 withAllowedCharacters: .urlQueryAllowed),
@@ -682,7 +682,7 @@ class NewsViewModel_eski: ObservableObject {
 
         isLoading = true
         let urlString =
-            "https://www.aryazilimdanismanlik.com/armedya/begenilen_haberler_mobil.php?arama=\(arama)&carpan=\(currentPage)&user=\(username)"
+            "https://armedia.live/begenilen_haberler_mobil.php?arama=\(arama)&carpan=\(currentPage)&user=\(username)"
         guard
             let encodedString = urlString.addingPercentEncoding(
                 withAllowedCharacters: .urlQueryAllowed),
@@ -810,7 +810,7 @@ struct NewsItemView: View {
                     .frame(width: 50, height: 50)
                     .padding(.trailing, 8)
                 /*
-                AsyncImage(url: URL(string: "https://www.aryazilimdanismanlik.com/armedya/logo/" + kaynak + ".png?v=\(Date().timeIntervalSince1970)")) { image in
+                AsyncImage(url: URL(string: "https://armedia.live/logo/" + kaynak + ".png?v=\(Date().timeIntervalSince1970)")) { image in
                     image.resizable().scaledToFit()
                 } placeholder: {
                     ProgressView()

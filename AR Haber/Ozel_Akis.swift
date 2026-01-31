@@ -173,7 +173,7 @@ struct Ozel_Akis: View {
                 {
                     WebViewContainer(
                         urlString:
-                            "https://www.aryazilimdanismanlik.com/armedya/yorumlar.php?id=\(selectedNews.id)&username=\(user.username)"
+                            "https://armedia.live/yorumlar.php?id=\(selectedNews.id)&username=\(user.username)"
                     ) {
                         showCommentsView = false
                     }
@@ -187,7 +187,7 @@ struct Ozel_Akis: View {
                     // Tıklanma kaydı - ID kullanarak
                     WebViewContainer(
                         urlString:
-                            "https://www.aryazilimdanismanlik.com/armedya/tiklanma.php?id=\(selectedNews.id)"
+                            "https://armedia.live/tiklanma.php?id=\(selectedNews.id)"
                     ) {
                         showWebView = false
                     }
@@ -204,7 +204,7 @@ struct Ozel_Akis: View {
                         }
                         // Aksi takdirde ID bazlı endpoint kullan
                         return
-                            "https://www.aryazilimdanismanlik.com/armedya/haber.php?id=\(selectedNews.id)"
+                            "https://armedia.live/haber.php?id=\(selectedNews.id)"
                     }()
 
                     WebViewContainer(urlString: newsURL) {
@@ -230,7 +230,7 @@ struct Ozel_Akis: View {
         guard let user = authViewModel.user else { return }
 
         let urlString =
-            "https://www.aryazilimdanismanlik.com/armedya/load_user_reactions.php?user=\(user.username)"
+            "https://armedia.live/load_user_reactions.php?user=\(user.username)"
         guard let url = URL(string: urlString) else {
             print("Invalid URL")
             return
@@ -276,7 +276,7 @@ struct Ozel_Akis: View {
         guard let user = authViewModel.user else { return }
 
         let urlString =
-            "https://www.aryazilimdanismanlik.com/armedya/load_tapped_sources.php?user=\(user.username)"
+            "https://armedia.live/load_tapped_sources.php?user=\(user.username)"
         guard let url = URL(string: urlString) else {
             print("Invalid URL")
             return
@@ -318,7 +318,7 @@ struct Ozel_Akis: View {
         guard let user = authViewModel.user else { return }
 
         let urlString =
-            "https://www.aryazilimdanismanlik.com/armedya/load_tapped_categories.php?user=\(user.username)"
+            "https://armedia.live/load_tapped_categories.php?user=\(user.username)"
         guard let url = URL(string: urlString) else {
             print("Invalid URL")
             return
@@ -391,7 +391,7 @@ struct Ozel_Akis: View {
             guard
                 let url = URL(
                     string:
-                        "https://www.aryazilimdanismanlik.com/armedya/tepki_mobil.php?begenme=\(begenme)&begen=\(begen)&id=\(newsID)&user=\(user.username)"
+                        "https://armedia.live/tepki_mobil.php?begenme=\(begenme)&begen=\(begen)&id=\(newsID)&user=\(user.username)"
                 )
             else { return }
 

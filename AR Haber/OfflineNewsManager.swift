@@ -432,7 +432,7 @@ class OfflineNewsManager: ObservableObject {
                 withAllowedCharacters: .urlQueryAllowed),
             let url = URL(
                 string:
-                    "https://www.aryazilimdanismanlik.com/armedya/ozet_olustur.php?haber_url=\(encodedURL)"
+                    "https://armedia.live/ozet_olustur.php?haber_url=\(encodedURL)"
             )
         else {
             print("❌ Özet URL'si oluşturulamadı")

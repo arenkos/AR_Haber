@@ -50,7 +50,7 @@ class AuthViewModel: ObservableObject {
     }
 
     func login(username: String, password: String) {
-        guard let url = URL(string: "https://armedya.aryazilimdanismanlik.com/login.php") else {
+        guard let url = URL(string: "https://armedia.live/login.php") else {
             self.errorMessage = "Geçersiz URL"
             return
         }
@@ -141,7 +141,7 @@ class AuthViewModel: ObservableObject {
 
     func kayit(username: String, ad_soyad: String, telefon: String, email: String, password: String)
     {
-        guard let url = URL(string: "https://armedya.aryazilimdanismanlik.com/kayit.php") else {
+        guard let url = URL(string: "https://armedia.live/kayit.php") else {
             self.errorMessage = "Geçersiz URL"
             self.showAlert(message: self.errorMessage)  // self kullanıldı
             return
@@ -226,7 +226,7 @@ class AuthViewModel: ObservableObject {
         }
 
         let urlString =
-            "https://aryazilimdanismanlik.com/armedya/logout.php?user=\(user.username)&device_token=\(deviceToken)"
+            "https://armedia.live/logout.php?user=\(user.username)&device_token=\(deviceToken)"
 
         guard
             let url = URL(

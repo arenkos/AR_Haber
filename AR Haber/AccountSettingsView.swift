@@ -90,7 +90,7 @@ struct AccountSettingsView: View {
                 Section(header: Text("Hakkında")) {
                     Button(action: {
                         webViewItem = WebViewItem(
-                            url: "https://armedya.aryazilimdanismanlik.com/gizlilik.php",
+                            url: "https://armedia.live/gizlilik.php",
                             title: "Gizlilik Politikası"
                         )
                     }) {
@@ -100,7 +100,7 @@ struct AccountSettingsView: View {
 
                     Button(action: {
                         webViewItem = WebViewItem(
-                            url: "https://armedya.aryazilimdanismanlik.com/hakkimizda.php",
+                            url: "https://armedia.live/hakkimizda.php",
                             title: "Hakkımızda"
                         )
                     }) {
@@ -110,7 +110,7 @@ struct AccountSettingsView: View {
 
                     Button(action: {
                         webViewItem = WebViewItem(
-                            url: "https://armedya.aryazilimdanismanlik.com/iletisim.php",
+                            url: "https://armedia.live/iletisim.php",
                             title: "İletişim"
                         )
                     }) {
@@ -191,7 +191,7 @@ struct AccountSettingsView: View {
             "new_password": authViewModel.sha256(newPassword),
         ]
 
-        guard let url = URL(string: "https://armedya.aryazilimdanismanlik.com/profil_guncelle.php")
+        guard let url = URL(string: "https://armedia.live/profil_guncelle.php")
         else {
             errorMessage = "Geçersiz URL"
             return

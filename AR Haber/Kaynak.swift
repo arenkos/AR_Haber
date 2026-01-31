@@ -41,7 +41,7 @@ struct Kaynak: View {
             } else {
                 List(kaynak, id: \.self) { category in
                     HStack {/*
-                        AsyncImage(url: URL(string: "https://www.aryazilimdanismanlik.com/armedya/logo/" + mapSource(category: category) + ".png?v=\(Date().timeIntervalSince1970)")) { image in
+                        AsyncImage(url: URL(string: "https://armedia.live/logo/" + mapSource(category: category) + ".png?v=\(Date().timeIntervalSince1970)")) { image in
                             image.resizable()
                                 .scaledToFit()
                                 .frame(height: 20)
@@ -74,7 +74,7 @@ struct Kaynak: View {
 
     // Function to fetch kaynak
     func fetchSources() {
-        let urlString = "https://www.aryazilimdanismanlik.com/armedya/fetch_kaynak.php"
+        let urlString = "https://armedia.live/fetch_kaynak.php"
         guard let url = URL(string: urlString) else {
             print("Invalid URL")
             return
@@ -129,7 +129,7 @@ struct Kaynak: View {
         //saveTappedSources() // Save the tapped kaynak to the database
         
         if let user = authViewModel.user {
-            let urlString = "https://www.aryazilimdanismanlik.com/armedya/arama_kaynak.php?kaynak=\(category)&user=\(user.username)"
+            let urlString = "https://armedia.live/arama_kaynak.php?kaynak=\(category)&user=\(user.username)"
             guard let url = URL(string: urlString) else {
                 print("Invalid URL")
                 return
@@ -165,7 +165,7 @@ struct Kaynak: View {
         let selectedSourcesArray = Array(tappedSources)
         let kaynakString = selectedSourcesArray.joined(separator: ",")
         
-        let urlString = "https://www.aryazilimdanismanlik.com/armedya/save_tapped_sources.php"
+        let urlString = "https://armedia.live/save_tapped_sources.php"
         guard let url = URL(string: urlString) else {
             print("Invalid URL")
             return
@@ -200,7 +200,7 @@ struct Kaynak: View {
     func loadTappedSources() {
         guard let user = authViewModel.user else { return }
         
-        let urlString = "https://www.aryazilimdanismanlik.com/armedya/load_tapped_sources.php?user=\(user.username)"
+        let urlString = "https://armedia.live/load_tapped_sources.php?user=\(user.username)"
         guard let url = URL(string: urlString) else {
             print("Invalid URL")
             return

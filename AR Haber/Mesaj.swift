@@ -70,7 +70,7 @@ class ChatWebSocketService: ObservableObject {
     @Published var messages: [Message] = []
 
     func connect() {
-        let url = URL(string: "ws://www.aryazilimdanismanlik.com:8880")!
+        let url = URL(string: "wss://armedia.live:8880")!
         webSocketTask = URLSession.shared.webSocketTask(with: url)
         webSocketTask?.resume()
         receiveMessage()
@@ -131,7 +131,7 @@ class ChatService: ObservableObject {
         guard
             let url = URL(
                 string:
-                    "https://www.aryazilimdanismanlik.com/armedya/get_messages.php?sender_id=\(senderId)&receiver_id=\(receiverId)"
+                    "https://armedia.live/get_messages.php?sender_id=\(senderId)&receiver_id=\(receiverId)"
             )
         else { return }
 
@@ -158,7 +158,7 @@ class ChatService: ObservableObject {
         haberBaslik: String? = nil, haberResim: String? = nil,
         completion: @escaping (Bool, String) -> Void
     ) {
-        guard let url = URL(string: "https://www.aryazilimdanismanlik.com/armedya/send_message.php")
+        guard let url = URL(string: "https://armedia.live/send_message.php")
         else {
             completion(false, "URL Hatası")
             return
@@ -235,7 +235,7 @@ class ChatService: ObservableObject {
         }
 
         let urlString =
-            "https://www.aryazilimdanismanlik.com/armedya/search_users.php?query=\(query)"
+            "https://armedia.live/search_users.php?query=\(query)"
         guard let url = URL(string: urlString) else { return }
 
         URLSession.shared.dataTask(with: url) { data, _, error in
@@ -266,7 +266,7 @@ class ChatService: ObservableObject {
         guard
             let url = URL(
                 string:
-                    "https://www.aryazilimdanismanlik.com/armedya/get_recent_chats.php?sender_id=\(senderId)"
+                    "https://armedia.live/get_recent_chats.php?sender_id=\(senderId)"
             )
         else { return }
 
@@ -440,10 +440,9 @@ func isNewsURL(_ text: String) -> Bool {
     // Debug log
     print("isNewsURL kontrolü: \(text)")
 
-    // Haber URL'si kontrolü - armedya veya aryazilimdanismanlik içeriyorsa
+    // Haber URL'si kontrolü - armedia.live veya arhaber içeriyorsa
     let isNews =
-        (text.contains("armedya") || text.contains("aryazilimdanismanlik")
-            || text.contains("arhaber"))
+        (text.contains("armedia.live") || text.contains("arhaber"))
         && (text.hasPrefix("http://") || text.hasPrefix("https://"))
 
     print("isNewsURL sonuç: \(isNews)")
@@ -604,7 +603,7 @@ struct ChatView: View {
     func get_device_token(user: String) {
         guard
             let url = URL(
-                string: "https://www.aryazilimdanismanlik.com/armedya/get_device_token.php")
+                string: "https://armedia.live/get_device_token.php")
         else { return }
 
         var request = URLRequest(url: url)
@@ -645,7 +644,7 @@ struct ChatView: View {
     func increaseShareCount(for url: String?) {
         guard let url = url else { return }
 
-        let urlString = "https://www.aryazilimdanismanlik.com/armedya/paylasim_sayisi.php"
+        let urlString = "https://armedia.live/paylasim_sayisi.php"
         guard let requestUrl = URL(string: urlString) else { return }
 
         var request = URLRequest(url: requestUrl)
