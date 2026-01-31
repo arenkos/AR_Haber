@@ -1,5 +1,5 @@
-import SwiftUI
 import Foundation
+import SwiftUI
 import WebKit
 
 // Mesaj yapısı
@@ -51,14 +51,14 @@ struct Usr: Identifiable, Codable, Equatable {
 class ChatWebSocketService: ObservableObject {
     private var webSocketTask: URLSessionWebSocketTask?
     @Published var messages: [Message] = []
-    
+
     func connect() {
         let url = URL(string: "ws://www.aryazilimdanismanlik.com:8880")!
         webSocketTask = URLSession.shared.webSocketTask(with: url)
         webSocketTask?.resume()
         receiveMessage()
     }
-    
+
     func sendMessage(_ text: String) {
         let message = URLSessionWebSocketTask.Message.string(text)
         webSocketTask?.send(message) { error in
@@ -67,7 +67,7 @@ class ChatWebSocketService: ObservableObject {
             }
         }
     }
-    
+
     func receiveMessage() {
         webSocketTask?.receive { [weak self] result in
             switch result {
@@ -95,7 +95,7 @@ class ChatWebSocketService: ObservableObject {
             }
         }
     }
-    
+
     func disconnect() {
         webSocketTask?.cancel(with: .goingAway, reason: nil)
     }
@@ -111,14 +111,19 @@ class ChatService: ObservableObject {
     @Published var searchText: String = ""
 
     func fetchMessages(senderId: String, receiverId: String) {
-        guard let url = URL(string: "https://www.aryazilimdanismanlik.com/armedya/get_messages.php?sender_id=\(senderId)&receiver_id=\(receiverId)") else { return }
-        
+        guard
+            let url = URL(
+                string:
+                    "https://www.aryazilimdanismanlik.com/armedya/get_messages.php?sender_id=\(senderId)&receiver_id=\(receiverId)"
+            )
+        else { return }
+
         URLSession.shared.dataTask(with: url) { data, response, error in
             guard let data = data else {
                 print("Veri alınamadı: \(error?.localizedDescription ?? "Bilinmeyen hata")")
                 return
             }
-            
+
             do {
                 let messages = try JSONDecoder().decode([Message].self, from: data)
                 DispatchQueue.main.async {
@@ -130,42 +135,48 @@ class ChatService: ObservableObject {
             }
         }.resume()
     }
-    
-    func sendMessage(senderId: String, receiverId: String, text: String, deviceToken: String, completion: @escaping (Bool, String) -> Void) {
-        guard let url = URL(string: "https://www.aryazilimdanismanlik.com/armedya/send_message.php") else {
+
+    func sendMessage(
+        senderId: String, receiverId: String, text: String, deviceToken: String,
+        completion: @escaping (Bool, String) -> Void
+    ) {
+        guard let url = URL(string: "https://www.aryazilimdanismanlik.com/armedya/send_message.php")
+        else {
             completion(false, "URL Hatası")
             return
         }
-        
+
         let body: [String: Any] = [
             "sender_id": senderId,
             "receiver_id": receiverId,
             "text": text,
-            "device_token": deviceToken
+            "device_token": deviceToken,
         ]
-        
+
         let jsonData = try? JSONSerialization.data(withJSONObject: body)
-        
+
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.httpBody = jsonData
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-        
+
         URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
                 print("Mesaj gönderme hatası: \(error.localizedDescription)")
                 completion(false, "Mesaj gönderme hatası: \(error.localizedDescription)")
                 return
             }
-            
+
             if let httpResponse = response as? HTTPURLResponse {
                 print("Mesaj gönderme yanıtı: \(httpResponse.statusCode)")
                 if httpResponse.statusCode == 200 {
                     if let data = data, let responseString = String(data: data, encoding: .utf8) {
                         // PHP'den gelen yanıtı al
-                        if let jsonResponse = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
-                           let status = jsonResponse["status"] as? String,
-                           let message = jsonResponse["message"] as? String {
+                        if let jsonResponse = try? JSONSerialization.jsonObject(
+                            with: data, options: []) as? [String: Any],
+                            let status = jsonResponse["status"] as? String,
+                            let message = jsonResponse["message"] as? String
+                        {
                             if status == "success" {
                                 print("Mesaj başarıyla gönderildi.")
                                 completion(true, message)
@@ -181,7 +192,7 @@ class ChatService: ObservableObject {
             }
         }.resume()
     }
-    
+
     func searchUsers(query: String) {
         guard !query.isEmpty else {
             searchResults = []
@@ -189,7 +200,8 @@ class ChatService: ObservableObject {
             return
         }
 
-        let urlString = "https://www.aryazilimdanismanlik.com/armedya/search_users.php?query=\(query)"
+        let urlString =
+            "https://www.aryazilimdanismanlik.com/armedya/search_users.php?query=\(query)"
         guard let url = URL(string: urlString) else { return }
 
         URLSession.shared.dataTask(with: url) { data, _, error in
@@ -215,19 +227,51 @@ class ChatService: ObservableObject {
             }
         }.resume()
     }
-    
+
     func fetchRecentChats(senderId: String) {
-        guard let url = URL(string: "https://www.aryazilimdanismanlik.com/armedya/get_recent_chats.php?sender_id=\(senderId)") else { return }
-        
-        URLSession.shared.dataTask(with: url) { data, _, _ in
-            guard let data = data else { return }
-            if let users = try? JSONDecoder().decode([Usr].self, from: data) {
-                DispatchQueue.main.async {
-                    self.recentChats = users
-                    print("Son konuşmalar: \(users)") // Hata ayıklama için
+        guard
+            let url = URL(
+                string:
+                    "https://www.aryazilimdanismanlik.com/armedya/get_recent_chats.php?sender_id=\(senderId)"
+            )
+        else { return }
+
+        URLSession.shared.dataTask(with: url) { data, _, error in
+            guard let data = data else {
+                print(
+                    "Son konuşmalar: Veri alınamadı - \(error?.localizedDescription ?? "Bilinmeyen hata")"
+                )
+                return
+            }
+
+            // Debug: Gelen veriyi yazdır
+            if let jsonString = String(data: data, encoding: .utf8) {
+                print("Son konuşmalar API yanıtı: \(jsonString)")
+            }
+
+            do {
+                // PHP wrapper yapısını decode et
+                struct RecentChatsResponse: Codable {
+                    let success: Bool
+                    let data: [Usr]
+                    let count: Int
                 }
-            } else {
-                print("Son konuşmalar alınamadı.")
+
+                let response = try JSONDecoder().decode(RecentChatsResponse.self, from: data)
+                DispatchQueue.main.async {
+                    self.recentChats = response.data
+                    print("Son konuşmalar yüklendi: \(response.count) adet")
+                }
+            } catch {
+                print("Son konuşmalar parse hatası: \(error)")
+
+                // Fallback: Eğer wrapper yoksa doğrudan array dene
+                if let users = try? JSONDecoder().decode([Usr].self, from: data) {
+                    DispatchQueue.main.async {
+                        self.recentChats = users
+                        print("Son konuşmalar (fallback): \(users.count) adet")
+                    }
+                }
             }
         }.resume()
     }
@@ -237,53 +281,61 @@ class ChatService: ObservableObject {
 struct ChatListView: View {
     @StateObject private var chatService = ChatService()
     let senderId: String
-    let newsItem: NewsItem? // Haber bilgilerini tutacak değişken
-    @State private var selectedUser: Usr? // Seçilen kullanıcıyı tutacak değişken
+    let newsItem: NewsItem?  // Haber bilgilerini tutacak değişken
 
     var body: some View {
-        Text("Mesajlar Sayfası")
-        VStack {
-            // Arama çubuğu
-            TextField("Kullanıcı Ara...", text: $chatService.searchText)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-                .padding()
-                .onChange(of: chatService.searchText) { newValue in
-                    chatService.searchUsers(query: newValue)
-                }
-            
-            // Kullanıcı listesini göster
-            List {
-                ForEach(chatService.searchText.isEmpty ? chatService.recentChats : chatService.searchResults) { user in
-                    Button(action: {
-                        // Seçilen kullanıcıyı ayarla
-                        selectedUser = user
-                    }) {
-                        HStack {
-                            Text(user.ad_soyad + "(" + user.username + ")")
-                                .font(.headline)
-                            Spacer()
-                            Image(systemName: "chevron.right")
+        NavigationView {
+            VStack(spacing: 0) {
+                // Arama çubuğu
+                TextField("Kullanıcı Ara...", text: $chatService.searchText)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .padding()
+                    .onChange(of: chatService.searchText) { newValue in
+                        chatService.searchUsers(query: newValue)
+                    }
+
+                // Kullanıcı listesini göster
+                List {
+                    ForEach(
+                        chatService.searchText.isEmpty
+                            ? chatService.recentChats : chatService.searchResults
+                    ) { user in
+                        NavigationLink(
+                            destination: ChatView(
+                                senderId: senderId, receiverId: user.username, newsItem: newsItem)
+                        ) {
+                            HStack {
+                                // Profil ikonu
+                                Image(systemName: "person.circle.fill")
+                                    .font(.system(size: 40))
+                                    .foregroundColor(.blue)
+
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(user.ad_soyad)
+                                        .font(.headline)
+                                    Text("@\(user.username)")
+                                        .font(.subheadline)
+                                        .foregroundColor(.gray)
+                                }
+
+                                Spacer()
+                            }
+                            .padding(.vertical, 4)
                         }
                     }
-                    .buttonStyle(PlainButtonStyle())
+                }
+                .listStyle(PlainListStyle())
+            }
+            .navigationTitle("Mesajlar")
+            .navigationBarTitleDisplayMode(.large)
+            .onAppear {
+                if !senderId.isEmpty {
+                    print(senderId)
+                    chatService.fetchRecentChats(senderId: senderId)
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .onAppear {
-                print("Arama sonuçları: \(chatService.searchResults)") // Hata ayıklama için
-                print("Son konuşmalar: \(chatService.recentChats)") // Hata ayıklama için
-            }
         }
-        .sheet(item: $selectedUser) { user in
-            // Kullanıcı seçildiğinde ChatView'i aç
-            ChatView(senderId: senderId, receiverId: user.username, newsItem: newsItem) // Burada haber bilgilerini geçiyoruz
-        }
-        .onAppear {
-            if !senderId.isEmpty {
-                print(senderId)
-                chatService.fetchRecentChats(senderId: senderId)
-            }
-        }
+        .navigationViewStyle(.stack)
     }
 }
 
@@ -293,24 +345,26 @@ struct ChatView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @StateObject private var chatService = ChatService()
     @State private var messageText = ""
-    @State private var urlToOpen: URLItem? // Açılacak URL'yi tutacak değişken
-    @State private var timer: Timer? // Timer değişkeni
+    @State private var urlToOpen: URLItem?  // Açılacak URL'yi tutacak değişken
+    @State private var timer: Timer?  // Timer değişkeni
 
     let senderId: String
     let receiverId: String
-    let newsItem: NewsItem? // Haber bilgilerini tutacak değişken
-    
+    let newsItem: NewsItem?  // Haber bilgilerini tutacak değişken
+
     var body: some View {
         VStack {
             ScrollViewReader { scrollView in
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 10, pinnedViews: []) {
-                        ForEach(chatService.messages.reversed()) { message in // Listeyi ters çeviriyoruz
+                        ForEach(chatService.messages.reversed()) { message in  // Listeyi ters çeviriyoruz
                             HStack {
                                 if message.sender_id == senderId {
                                     Spacer()
                                     VStack {
-                                        if let url = URL(string: message.text), UIApplication.shared.canOpenURL(url) {
+                                        if let url = URL(string: message.text),
+                                            UIApplication.shared.canOpenURL(url)
+                                        {
                                             Button(action: {
                                                 urlToOpen = URLItem(url: message.text)
                                             }) {
@@ -319,7 +373,8 @@ struct ChatView: View {
                                                     .background(Color.blue)
                                                     .foregroundColor(.white)
                                                     .clipShape(RoundedRectangle(cornerRadius: 10))
-                                                    .frame(maxWidth: .infinity, alignment: .trailing)
+                                                    .frame(
+                                                        maxWidth: .infinity, alignment: .trailing)
                                             }
                                         } else {
                                             Text(message.text)
@@ -329,14 +384,16 @@ struct ChatView: View {
                                                 .clipShape(RoundedRectangle(cornerRadius: 10))
                                                 .frame(maxWidth: .infinity, alignment: .trailing)
                                         }
-                                        
+
                                         Text(message.timestamp)
                                             .font(.system(size: 7))
                                             .frame(maxWidth: .infinity, alignment: .trailing)
                                     }
                                 } else {
                                     VStack {
-                                        if let url = URL(string: message.text), UIApplication.shared.canOpenURL(url) {
+                                        if let url = URL(string: message.text),
+                                            UIApplication.shared.canOpenURL(url)
+                                        {
                                             Button(action: {
                                                 urlToOpen = URLItem(url: message.text)
                                             }) {
@@ -380,7 +437,8 @@ struct ChatView: View {
                 }
                 .onDisappear {
                     // Görünüm kaybolduğunda observer'ı kaldır
-                    NotificationCenter.default.removeObserver(self, name: NSNotification.Name("OpenChat"), object: nil)
+                    NotificationCenter.default.removeObserver(
+                        self, name: NSNotification.Name("OpenChat"), object: nil)
                     //chatServiceWebSocket.disconnect()
                 }
             }
@@ -392,7 +450,7 @@ struct ChatView: View {
                     .onAppear {
                         // Eğer haber URL'si varsa, mesaj yazma alanına ekle
                         if let newsItem = newsItem {
-                            messageText = newsItem.haber_url // Haber URL'sini mesaj alanına ekle
+                            messageText = newsItem.haber_url  // Haber URL'sini mesaj alanına ekle
                         }
                     }
 
@@ -406,19 +464,22 @@ struct ChatView: View {
         }
         .onAppear {
             chatService.fetchMessages(senderId: senderId, receiverId: receiverId)
-            startTimer() // Timer'ı başlat
+            startTimer()  // Timer'ı başlat
         }
         .onDisappear {
-            stopTimer() // Timer'ı durdur
+            stopTimer()  // Timer'ı durdur
         }
         .sheet(item: $urlToOpen) { item in
             WebViewContainer_Mesaj(urlString: item.url) {
-                urlToOpen = nil // Kapatma işlemi
+                urlToOpen = nil  // Kapatma işlemi
             }
         }
     }
     func get_device_token(user: String) {
-        guard let url = URL(string: "https://www.aryazilimdanismanlik.com/armedya/get_device_token.php") else { return }
+        guard
+            let url = URL(
+                string: "https://www.aryazilimdanismanlik.com/armedya/get_device_token.php")
+        else { return }
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -438,7 +499,9 @@ struct ChatView: View {
                 return
             }
 
-            if let json = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
+            if let json = try? JSONSerialization.jsonObject(with: data, options: [])
+                as? [String: Any]
+            {
                 if let token = json["device_token"] as? String {
                     DispatchQueue.main.async {
                         self.authViewModel.deviceToken = token
@@ -452,47 +515,48 @@ struct ChatView: View {
         }
         task.resume()
     }
-    
+
     func increaseShareCount(for url: String?) {
         guard let url = url else { return }
-        
+
         let urlString = "https://www.aryazilimdanismanlik.com/armedya/paylasim_sayisi.php"
         guard let requestUrl = URL(string: urlString) else { return }
-        
+
         var request = URLRequest(url: requestUrl)
         request.httpMethod = "POST"
         let bodyData = "haber_url=\(url)"
         request.httpBody = bodyData.data(using: .utf8)
         request.addValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-        
+
         URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
                 print("Hata: \(error.localizedDescription)")
                 return
             }
-            
+
             if let response = response as? HTTPURLResponse {
                 print("Yanıt durumu: \(response.statusCode)")
             }
-            
+
             if let data = data, let responseString = String(data: data, encoding: .utf8) {
                 print("Yanıt: \(responseString)")
             }
         }.resume()
     }
-    
+
     func sendMessage() {
         // Klavyeyi kapat
-        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        UIApplication.shared.sendAction(
+            #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
 
         guard !messageText.isEmpty else {
             print("Mesaj gönderilemedi: Mesaj boş.")
             return
         }
-        
+
         let currentMessage = messageText
-        messageText = "" // Mesaj gönderildikten sonra metni temizle
-        
+        messageText = ""  // Mesaj gönderildikten sonra metni temizle
+
         // Cihaz token'ını al ve print et
         guard let deviceToken = self.authViewModel.deviceToken else {
             print("Cihaz Token'ı bulunamadı.")
@@ -500,8 +564,11 @@ struct ChatView: View {
         }
 
         print("Cihaz Token'ı: \(deviceToken)")
-        
-        chatService.sendMessage(senderId: senderId, receiverId: receiverId, text: currentMessage, deviceToken: deviceToken) { success, message in
+
+        chatService.sendMessage(
+            senderId: senderId, receiverId: receiverId, text: currentMessage,
+            deviceToken: deviceToken
+        ) { success, message in
             if success {
                 DispatchQueue.main.async {
                     chatService.fetchMessages(senderId: self.senderId, receiverId: self.receiverId)
@@ -509,19 +576,19 @@ struct ChatView: View {
                 if let newsItem = newsItem {
                     increaseShareCount(for: newsItem.haber_url)
                 }
-                
+
             } else {
                 print("Mesaj gönderilemedi: \(message)")
             }
         }
     }
-    
+
     func startTimer() {
         timer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { _ in
-            chatService.fetchMessages(senderId: senderId, receiverId: receiverId) // Mesajları güncelle
+            chatService.fetchMessages(senderId: senderId, receiverId: receiverId)  // Mesajları güncelle
         }
     }
-    
+
     func stopTimer() {
         timer?.invalidate()
         timer = nil
@@ -530,7 +597,7 @@ struct ChatView: View {
 
 // URL'yi tutacak struct
 struct URLItem: Identifiable {
-    let id = UUID() // Her URL için benzersiz bir kimlik
+    let id = UUID()  // Her URL için benzersiz bir kimlik
     let url: String
 }
 
@@ -538,28 +605,28 @@ struct URLItem: Identifiable {
 struct WebViewContainer_Mesaj: UIViewRepresentable {
     let urlString: String
     let onClose: () -> Void
-    
+
     func makeUIView(context: Context) -> WKWebView {
         WKWebView()
     }
-    
+
     func updateUIView(_ uiView: WKWebView, context: Context) {
         if let url = URL(string: urlString) {
             uiView.load(URLRequest(url: url))
         }
     }
-    
+
     static func dismantleUIView(_ uiView: WKWebView, coordinator: Coordinator) {
         uiView.stopLoading()
     }
-    
+
     func makeCoordinator() -> Coordinator {
         Coordinator(onClose: onClose)
     }
-    
+
     class Coordinator: NSObject {
         let onClose: () -> Void
-        
+
         init(onClose: @escaping () -> Void) {
             self.onClose = onClose
         }
