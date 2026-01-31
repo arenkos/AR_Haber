@@ -204,7 +204,7 @@ class ChatService: ObservableObject {
             if let httpResponse = response as? HTTPURLResponse {
                 print("Mesaj gönderme yanıtı: \(httpResponse.statusCode)")
                 if httpResponse.statusCode == 200 {
-                    if let data = data, let responseString = String(data: data, encoding: .utf8) {
+                    if let data = data {
                         // PHP'den gelen yanıtı al
                         if let jsonResponse = try? JSONSerialization.jsonObject(
                             with: data, options: []) as? [String: Any],
@@ -324,7 +324,7 @@ struct ChatListView: View {
                 TextField("Kullanıcı Ara...", text: $chatService.searchText)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .padding()
-                    .onChange(of: chatService.searchText) { newValue in
+                    .onChange(of: chatService.searchText) { _, newValue in
                         chatService.searchUsers(query: newValue)
                     }
 

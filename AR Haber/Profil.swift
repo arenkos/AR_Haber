@@ -430,26 +430,6 @@ struct Profil: View {
                     }
                     .tabViewStyle(.page(indexDisplayMode: .never))
 
-                    Divider()
-
-                    // MARK: - Footer
-                    VStack(spacing: 12) {
-                        Button(action: { authViewModel.logout() }) {
-                            HStack {
-                                Image(systemName: "rectangle.portrait.and.arrow.right")
-                                Text("Çıkış Yap")
-                            }
-                            .font(.headline)
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
-                            .background(Color.red)
-                            .cornerRadius(10)
-                        }
-                        .padding(.horizontal, 16)
-                    }
-                    .padding(.vertical, 8)
-
                 } else {
                     // MARK: - Giriş Yapmamış Kullanıcı
                     VStack(spacing: 20) {

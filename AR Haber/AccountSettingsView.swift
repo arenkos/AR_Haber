@@ -128,6 +128,18 @@ struct AccountSettingsView: View {
                             .foregroundColor(.gray)
                     }
                 }
+
+                // MARK: - Çıkış Yap
+                Section {
+                    Button(action: { authViewModel.logout() }) {
+                        HStack {
+                            Image(systemName: "rectangle.portrait.and.arrow.right")
+                                .foregroundColor(.red)
+                            Text("Çıkış Yap")
+                                .foregroundColor(.red)
+                        }
+                    }
+                }
             }
         }
         .listStyle(InsetGroupedListStyle())

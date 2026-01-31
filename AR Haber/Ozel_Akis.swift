@@ -6,11 +6,10 @@
 //  Updated: 2026-01-25 - Fixed API endpoint for filtered news
 //
 
-import SwiftUI
-import WebKit
 import Combine
 import GoogleMobileAds
-
+import SwiftUI
+import WebKit
 
 struct Ozel_Akis: View {
     @EnvironmentObject var authViewModel: AuthViewModel
@@ -27,8 +26,9 @@ struct Ozel_Akis: View {
     @State private var kullanici_adi = ""
     @State private var kullanici_sifre = ""
     @State private var interstitial: InterstitialAd?
-    @State var tappedSources: Set<String> = [] // To keep track of tapped kaynak
-    @State var tappedCategories: Set<String> = [] // To keep track of tapped kategori
+    @State var tappedSources: Set<String> = []  // To keep track of tapped kaynak
+    @State var tappedCategories: Set<String> = []  // To keep track of tapped kategori
+    @State private var hasLoadedOnce = false  // Sadece ilk kez yüklensin
 
     init() {
         loadInterstitial()
@@ -36,8 +36,10 @@ struct Ozel_Akis: View {
 
     func loadInterstitial() {
         let request = Request()
-        InterstitialAd.load(with: AdConstants.currentInterstitialID,
-                          request: request) { [self] ad, error in
+        InterstitialAd.load(
+            with: AdConstants.currentInterstitialID,
+            request: request
+        ) { [self] ad, error in
             if let error = error {
                 print("Failed to load interstitial ad with error: \(error.localizedDescription)")
                 return
@@ -66,7 +68,7 @@ struct Ozel_Akis: View {
 
     // Filtered news based on search text
     var filteredNews: [NewsItem] {
-        let selectedSources = tappedSources // Seçilen kaynakları al
+        let selectedSources = tappedSources  // Seçilen kaynakları al
         let selectedCategories = tappedCategories
 
         // Kaynak ve kategoriye göre filtreleme
@@ -89,7 +91,9 @@ struct Ozel_Akis: View {
 
             SearchBar(text: $arama)
                 .onChange(of: arama) { oldValue, newValue in
-                    viewModel.loadfilteredNews(resetPage: true, arama: arama, kaynak: tappedSources.joined(separator: ","), kategori: tappedCategories.joined(separator: ","))
+                    viewModel.loadfilteredNews(
+                        resetPage: true, arama: arama, kaynak: tappedSources.joined(separator: ","),
+                        kategori: tappedCategories.joined(separator: ","))
                     loadUserReactions()
                 }
 
@@ -107,10 +111,10 @@ struct Ozel_Akis: View {
                     },
                     onReaction: toggleReaction,
                     isLiked: { newsID in
-                        likedNewsIDs.contains(newsID) // Kullanıcının beğendiği haberlerin kontrolü
+                        likedNewsIDs.contains(newsID)  // Kullanıcının beğendiği haberlerin kontrolü
                     },
                     isDisliked: { newsID in
-                        dislikedNewsIDs.contains(newsID) // Kullanıcının beğenmediği haberlerin kontrolü
+                        dislikedNewsIDs.contains(newsID)  // Kullanıcının beğenmediği haberlerin kontrolü
                     },
                     onComment: { news in
                         selectedNewsManager.selectedNews = news
@@ -119,50 +123,72 @@ struct Ozel_Akis: View {
                     onLoadMore: {
                         if !viewModel.isLoading {
                             loadUserReactions()
-                            viewModel.loadfilteredNews(resetPage: false, arama: arama, kaynak: tappedSources.joined(separator: ","), kategori: tappedCategories.joined(separator: ","))
+                            viewModel.loadfilteredNews(
+                                resetPage: false, arama: arama,
+                                kaynak: tappedSources.joined(separator: ","),
+                                kategori: tappedCategories.joined(separator: ","))
 
                         }
                     }
                 )
             }
             .onAppear {
-                loadUserReactions(){
+                loadUserReactions {
                     //print(dislikedNewsIDs)
                     //print(likedNewsIDs)
                 }
-                loadTappedSources(){
-                    loadTappedCategories(){
-                        if viewModel.news.isEmpty{
-                            viewModel.loadfilteredNews(resetPage: true, arama: "", kaynak: tappedSources.joined(separator: ","), kategori: tappedCategories.joined(separator: ","))
-                            print("Loading filtered news with sources: \(tappedSources.joined(separator: ","))")
-                            print("Loading filtered news with categories: \(tappedCategories.joined(separator: ","))")
-                        }else{
-                            viewModel.loadfilteredNews(resetPage: true, arama: "", kaynak: tappedSources.joined(separator: ","), kategori: tappedCategories.joined(separator: ","))
+
+                // Sadece ilk kez yükle
+                if !hasLoadedOnce {
+                    loadTappedSources {
+                        loadTappedCategories {
+                            viewModel.loadfilteredNews(
+                                resetPage: true, arama: "",
+                                kaynak: tappedSources.joined(separator: ","),
+                                kategori: tappedCategories.joined(separator: ","))
+                            print(
+                                "Loading filtered news with sources: \(tappedSources.joined(separator: ","))"
+                            )
+                            print(
+                                "Loading filtered news with categories: \(tappedCategories.joined(separator: ","))"
+                            )
                         }
                     }
+                    hasLoadedOnce = true
                 }
             }
             .refreshable {
                 viewModel.news.removeAll()
-                viewModel.loadfilteredNews(resetPage: true, arama: "", kaynak: tappedSources.joined(separator: ","), kategori: tappedCategories.joined(separator: ","))
-                loadUserReactions(){
+                viewModel.loadfilteredNews(
+                    resetPage: true, arama: "", kaynak: tappedSources.joined(separator: ","),
+                    kategori: tappedCategories.joined(separator: ","))
+                loadUserReactions {
                     //print(dislikedNewsIDs)
                     //print(likedNewsIDs)
                 }
             }
             .sheet(isPresented: $showCommentsView) {
                 if let selectedNews = selectedNewsManager.selectedNews,
-                   let user = authViewModel.user {
-                    WebViewContainer(urlString: "https://www.aryazilimdanismanlik.com/armedya/yorumlar.php?id=\(selectedNews.id)&username=\(user.username)") {
+                    let user = authViewModel.user
+                {
+                    WebViewContainer(
+                        urlString:
+                            "https://www.aryazilimdanismanlik.com/armedya/yorumlar.php?id=\(selectedNews.id)&username=\(user.username)"
+                    ) {
                         showCommentsView = false
                     }
-                    .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height-100)
+                    .frame(
+                        width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height - 100
+                    )
                 }
             }
             .sheet(isPresented: $showWebView) {
                 if let selectedNews = selectedNewsManager.selectedNews {
                     // Tıklanma kaydı - ID kullanarak
-                    WebViewContainer(urlString: "https://www.aryazilimdanismanlik.com/armedya/tiklanma.php?id=\(selectedNews.id)") {
+                    WebViewContainer(
+                        urlString:
+                            "https://www.aryazilimdanismanlik.com/armedya/tiklanma.php?id=\(selectedNews.id)"
+                    ) {
                         showWebView = false
                     }
                     .frame(width: 0, height: 0)
@@ -171,23 +197,29 @@ struct Ozel_Akis: View {
                     // Haber URL'ini akıllıca seç
                     let newsURL: String = {
                         // Eğer haber_url geçerliyse onu kullan
-                        if !selectedNews.haber_url.isEmpty && selectedNews.haber_url.starts(with: "http") {
+                        if !selectedNews.haber_url.isEmpty
+                            && selectedNews.haber_url.starts(with: "http")
+                        {
                             return selectedNews.haber_url
                         }
                         // Aksi takdirde ID bazlı endpoint kullan
-                        return "https://www.aryazilimdanismanlik.com/armedya/haber.php?id=\(selectedNews.id)"
+                        return
+                            "https://www.aryazilimdanismanlik.com/armedya/haber.php?id=\(selectedNews.id)"
                     }()
-                    
+
                     WebViewContainer(urlString: newsURL) {
                         showWebView = false
                     }
-                    .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height-100)
+                    .frame(
+                        width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height - 100
+                    )
                 }
             }
         }
         .onAppear {
             if let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-               let root = scene.windows.first?.rootViewController {
+                let root = scene.windows.first?.rootViewController
+            {
                 interstitial?.present(from: root)
                 loadInterstitial()
             }
@@ -197,7 +229,8 @@ struct Ozel_Akis: View {
     func loadUserReactions(completion: @escaping () -> Void = {}) {
         guard let user = authViewModel.user else { return }
 
-        let urlString = "https://www.aryazilimdanismanlik.com/armedya/load_user_reactions.php?user=\(user.username)"
+        let urlString =
+            "https://www.aryazilimdanismanlik.com/armedya/load_user_reactions.php?user=\(user.username)"
         guard let url = URL(string: urlString) else {
             print("Invalid URL")
             return
@@ -215,7 +248,8 @@ struct Ozel_Akis: View {
             }
 
             do {
-                let jsonResponse = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any]
+                let jsonResponse =
+                    try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any]
 
                 if let jsonResponse = jsonResponse {
                     // Gelen veriyi doğru şekilde parse et
@@ -241,7 +275,8 @@ struct Ozel_Akis: View {
     func loadTappedSources(completion: @escaping () -> Void) {
         guard let user = authViewModel.user else { return }
 
-        let urlString = "https://www.aryazilimdanismanlik.com/armedya/load_tapped_sources.php?user=\(user.username)"
+        let urlString =
+            "https://www.aryazilimdanismanlik.com/armedya/load_tapped_sources.php?user=\(user.username)"
         guard let url = URL(string: urlString) else {
             print("Invalid URL")
             return
@@ -259,8 +294,10 @@ struct Ozel_Akis: View {
             }
 
             do {
-                if let jsonResponse = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
-                   let kaynak = jsonResponse["kaynak"] as? [String] {
+                if let jsonResponse = try JSONSerialization.jsonObject(with: data, options: [])
+                    as? [String: Any],
+                    let kaynak = jsonResponse["kaynak"] as? [String]
+                {
                     DispatchQueue.main.async {
                         self.tappedSources = Set(kaynak)
                         print("Loaded tapped sources: \(self.tappedSources)")
@@ -280,7 +317,8 @@ struct Ozel_Akis: View {
     func loadTappedCategories(completion: @escaping () -> Void) {
         guard let user = authViewModel.user else { return }
 
-        let urlString = "https://www.aryazilimdanismanlik.com/armedya/load_tapped_categories.php?user=\(user.username)"
+        let urlString =
+            "https://www.aryazilimdanismanlik.com/armedya/load_tapped_categories.php?user=\(user.username)"
         guard let url = URL(string: urlString) else {
             print("Invalid URL")
             return
@@ -298,8 +336,10 @@ struct Ozel_Akis: View {
             }
 
             do {
-                if let jsonResponse = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
-                   let categories = jsonResponse["categories"] as? [String] {
+                if let jsonResponse = try JSONSerialization.jsonObject(with: data, options: [])
+                    as? [String: Any],
+                    let categories = jsonResponse["categories"] as? [String]
+                {
                     DispatchQueue.main.async {
                         self.tappedCategories = Set(categories)
                         print("Loaded tapped categories: \(self.tappedCategories)")
@@ -347,8 +387,13 @@ struct Ozel_Akis: View {
     }
 
     func sendReactionRequest(newsID: Int, begen: Int, begenme: Int) {
-        if let user = authViewModel.user{
-            guard let url = URL(string: "https://www.aryazilimdanismanlik.com/armedya/tepki_mobil.php?begenme=\(begenme)&begen=\(begen)&id=\(newsID)&user=\(user.username)") else { return }
+        if let user = authViewModel.user {
+            guard
+                let url = URL(
+                    string:
+                        "https://www.aryazilimdanismanlik.com/armedya/tepki_mobil.php?begenme=\(begenme)&begen=\(begen)&id=\(newsID)&user=\(user.username)"
+                )
+            else { return }
 
             var request = URLRequest(url: url)
             request.httpMethod = "GET"

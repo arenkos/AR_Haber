@@ -19,8 +19,8 @@ struct AdConstants {
     static let testInterstitialID = "ca-app-pub-3940256099942544/4411468910"
 
     // Gerçek reklamlar için
-    static let bannerAdUnitID = "ca-app-pub-6912090056166853/9706978010"
-    static let interstitialAdUnitID = "ca-app-pub-6912090056166853/9706978010"
+    static let nativeAdUnitID = "ca-app-pub-6912090056166853/1918217405"  // Haberler arasında (Native)
+    static let interstitialAdUnitID = "ca-app-pub-6912090056166853/1471487316"  // Sayfa geçişleri
 
     static let requestDelay: TimeInterval = 10.0
 
@@ -41,8 +41,8 @@ struct AdConstants {
         #endif
     }*/
 
-    static var currentBannerID: String {
-        return bannerAdUnitID
+    static var currentNativeID: String {
+        return nativeAdUnitID
     }
 
     static var currentInterstitialID: String {
@@ -64,7 +64,7 @@ struct SmartAdBannerView: View {
 
 // AdBannerView'ı güncelleyelim
 struct AdBannerView: UIViewRepresentable {
-    let adUnitID = AdConstants.currentBannerID
+    let adUnitID = AdConstants.currentNativeID
 
     func makeUIView(context: Context) -> UIView {
         let containerView = UIView()
@@ -121,7 +121,7 @@ struct AdBannerView: UIViewRepresentable {
 
 // GADBannerViewController'ı güncelleyelim
 struct GADBannerViewController: UIViewControllerRepresentable {
-    let adUnitID = AdConstants.currentBannerID
+    let adUnitID = AdConstants.currentNativeID
 
     func makeUIViewController(context: Context) -> UIViewController {
         let viewController = UIViewController()
