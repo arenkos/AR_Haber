@@ -10,11 +10,13 @@ import SwiftUI
 
 struct PaywallView: View {
     @Environment(\.dismiss) var dismiss
+    @EnvironmentObject var authViewModel: AuthViewModel
     @StateObject private var subscriptionManager = SubscriptionManager.shared
     @State private var selectedProduct: Product?
     @State private var isPurchasing = false
     @State private var showError = false
     @State private var errorMessage = ""
+    @State private var showLoginRequired = false
 
     var body: some View {
         NavigationView {
@@ -139,9 +141,11 @@ struct PaywallView: View {
     private var restoreButton: some View {
         Button("Satın Almaları Geri Yükle") {
             Task {
-                await subscriptionManager.restorePurchases()
-                if subscriptionManager.hasAnySubscription {
-                    dismiss()
+                if let username = authViewModel.user?.username {
+                    await subscriptionManager.restorePurchases(username: username)
+                    if subscriptionManager.hasAnySubscription {
+                        dismiss()
+                    }
                 }
             }
         }
@@ -164,9 +168,15 @@ struct PaywallView: View {
     private func purchase() async {
         guard let product = selectedProduct else { return }
 
+        // Giriş kontrolü
+        guard let username = authViewModel.user?.username else {
+            showLoginRequired = true
+            return
+        }
+
         isPurchasing = true
         do {
-            let success = try await subscriptionManager.purchase(product)
+            let success = try await subscriptionManager.purchase(product, username: username)
             if success {
                 dismiss()
             }
@@ -175,6 +185,17 @@ struct PaywallView: View {
             showError = true
         }
         isPurchasing = false
+    }
+}
+
+extension PaywallView {
+    // LoginRequired alert modifier
+    func withLoginAlert() -> some View {
+        self.alert("Giriş Gerekli", isPresented: .constant(false)) {
+            Button("Tamam", role: .cancel) {}
+        } message: {
+            Text("Abonelik satın almak için lütfen giriş yapın.")
+        }
     }
 }
 

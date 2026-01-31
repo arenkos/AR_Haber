@@ -13,6 +13,7 @@ struct SplashScreenView: View {
     @State private var shimmerOffset: CGFloat = -1.0
     @EnvironmentObject var authViewModel: AuthViewModel
     @StateObject private var newsViewModel = NewsViewModel()
+    @ObservedObject private var subscriptionManager = SubscriptionManager.shared
 
     var body: some View {
         if isActive {
@@ -95,6 +96,13 @@ struct SplashScreenView: View {
 
                 // Haberleri arka planda yükle
                 newsViewModel.loadNews(resetPage: true, arama: "")
+
+                // Günlük abonelik kontrolü (kullanıcı giriş yaptıysa)
+                if let user = authViewModel.user {
+                    Task {
+                        await subscriptionManager.performDailyCheck(username: user.username)
+                    }
+                }
 
                 // 0-1 saniye: Fade in (saydam → opak)
                 withAnimation(.easeIn(duration: 1.0)) {
