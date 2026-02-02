@@ -138,10 +138,15 @@ struct Ozel_Akis: View {
                     //print(likedNewsIDs)
                 }
 
-                // Sadece ilk kez yükle
-                if !hasLoadedOnce {
-                    loadTappedSources {
-                        loadTappedCategories {
+                // Her seferinde güncel kaynak ve kategorileri yükle
+                let previousSources = tappedSources
+                let previousCategories = tappedCategories
+
+                loadTappedSources {
+                    loadTappedCategories {
+                        // Eğer kaynak veya kategoriler değiştiyse ya da ilk yüklemeyse haberleri yenile
+                        if !hasLoadedOnce || previousSources != tappedSources || previousCategories != tappedCategories {
+                            viewModel.news.removeAll()
                             viewModel.loadfilteredNews(
                                 resetPage: true, arama: "",
                                 kaynak: tappedSources.joined(separator: ","),
@@ -152,16 +157,22 @@ struct Ozel_Akis: View {
                             print(
                                 "Loading filtered news with categories: \(tappedCategories.joined(separator: ","))"
                             )
+                            hasLoadedOnce = true
                         }
                     }
-                    hasLoadedOnce = true
                 }
             }
             .refreshable {
-                viewModel.news.removeAll()
-                viewModel.loadfilteredNews(
-                    resetPage: true, arama: "", kaynak: tappedSources.joined(separator: ","),
-                    kategori: tappedCategories.joined(separator: ","))
+                // Güncel kaynak ve kategorileri yükle, sonra haberleri yenile
+                loadTappedSources {
+                    loadTappedCategories {
+                        viewModel.news.removeAll()
+                        viewModel.loadfilteredNews(
+                            resetPage: true, arama: "",
+                            kaynak: tappedSources.joined(separator: ","),
+                            kategori: tappedCategories.joined(separator: ","))
+                    }
+                }
                 loadUserReactions {
                     //print(dislikedNewsIDs)
                     //print(likedNewsIDs)
@@ -273,23 +284,30 @@ struct Ozel_Akis: View {
     }
 
     func loadTappedSources(completion: @escaping () -> Void) {
-        guard let user = authViewModel.user else { return }
+        guard let user = authViewModel.user else {
+            print("loadTappedSources: User not logged in")
+            completion()  // Kullanıcı yoksa bile completion çağır
+            return
+        }
 
         let urlString =
             "https://armedia.live/load_tapped_sources.php?user=\(user.username)"
         guard let url = URL(string: urlString) else {
             print("Invalid URL")
+            completion()
             return
         }
 
         let task = URLSession.shared.dataTask(with: url) { (data, response, error) in
             if let error = error {
                 print("Error: \(error)")
+                DispatchQueue.main.async { completion() }
                 return
             }
 
             guard let data = data else {
                 print("No data received")
+                DispatchQueue.main.async { completion() }
                 return
             }
 
@@ -305,9 +323,11 @@ struct Ozel_Akis: View {
                     }
                 } else {
                     print("Parsing error: Could not load tapped sources")
+                    DispatchQueue.main.async { completion() }
                 }
             } catch {
                 print("JSON parsing error: \(error)")
+                DispatchQueue.main.async { completion() }
             }
         }
 
@@ -315,23 +335,30 @@ struct Ozel_Akis: View {
     }
 
     func loadTappedCategories(completion: @escaping () -> Void) {
-        guard let user = authViewModel.user else { return }
+        guard let user = authViewModel.user else {
+            print("loadTappedCategories: User not logged in")
+            completion()  // Kullanıcı yoksa bile completion çağır
+            return
+        }
 
         let urlString =
             "https://armedia.live/load_tapped_categories.php?user=\(user.username)"
         guard let url = URL(string: urlString) else {
             print("Invalid URL")
+            completion()
             return
         }
 
         let task = URLSession.shared.dataTask(with: url) { data, response, error in
             if let error = error {
                 print("Error: \(error)")
+                DispatchQueue.main.async { completion() }
                 return
             }
 
             guard let data = data else {
                 print("No data received")
+                DispatchQueue.main.async { completion() }
                 return
             }
 
@@ -347,9 +374,11 @@ struct Ozel_Akis: View {
                     }
                 } else {
                     print("Parsing error: Could not load tapped categories")
+                    DispatchQueue.main.async { completion() }
                 }
             } catch {
                 print("JSON parsing error: \(error)")
+                DispatchQueue.main.async { completion() }
             }
         }
 
