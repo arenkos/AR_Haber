@@ -69,7 +69,7 @@ struct LikesView: View {
     }
     
     var body: some View {
-        Text("Beğenilenler Sayfası")
+        //Text("Beğenilenler Sayfası")
         VStack {
             
             SearchBar(text: $arama)

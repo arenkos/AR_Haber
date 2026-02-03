@@ -327,7 +327,7 @@ class SubscriptionManager: ObservableObject {
             dbHasAdFree = false
             dbHasAIAccess = true
             dbHasPremium = false
-        case "premium":
+        case "premium", "owner-lifetime":
             dbHasAdFree = true
             dbHasAIAccess = true
             dbHasPremium = true

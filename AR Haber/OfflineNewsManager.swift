@@ -82,7 +82,7 @@ class OfflineNewsManager: ObservableObject {
                             if let savedImagePath = savedImagePath {
                                 let offlineNews = OfflineNews(
                                     kaynak: "Kaynak Adı", resim_url: savedImagePath, baslik: baslik,
-                                    tarih: tarih, haber_url: fileURL.path)
+                                    tarih: tarih, haber_url: fileURL.path, savedAt: Date())
                                 self.saveNews(offlineNews)
                             }
                         }
@@ -177,6 +177,14 @@ class OfflineNewsManager: ObservableObject {
         do {
             let data = try Data(contentsOf: fileURL)
             offlineNewsList = try JSONDecoder().decode([OfflineNews].self, from: data)
+
+            // En son kaydedilen en başta görünecek şekilde sırala
+            offlineNewsList.sort { (news1, news2) -> Bool in
+                let date1 = news1.savedAt ?? Date.distantPast
+                let date2 = news2.savedAt ?? Date.distantPast
+                return date1 > date2
+            }
+
             print("✅ Haberler başarıyla yüklendi.")
             print("📋 Toplam haber sayısı: \(offlineNewsList.count)")
 
@@ -303,7 +311,8 @@ class OfflineNewsManager: ObservableObject {
                                     resim_url: savedImagePath,
                                     baslik: baslik,
                                     tarih: tarih,
-                                    haber_url: pdfFilePath.path  // PDF dosyasının yolu
+                                    haber_url: pdfFilePath.path,  // PDF dosyasının yolu
+                                    savedAt: Date()
                                 )
                                 self.saveNews(offlineNews)
                             }
@@ -363,7 +372,8 @@ class OfflineNewsManager: ObservableObject {
                                                 baslik: baslik,
                                                 tarih: tarih,
                                                 haber_url: haber_url,
-                                                ozet: summary
+                                                ozet: summary,
+                                                savedAt: Date()
                                             )
                                             self.saveNews(offlineNews)
                                             print("✅ Haber özeti ile birlikte kaydedildi!")
@@ -399,7 +409,8 @@ class OfflineNewsManager: ObservableObject {
                                                 baslik: baslik,
                                                 tarih: tarih,
                                                 haber_url: haber_url,
-                                                ozet: summary
+                                                ozet: summary,
+                                                savedAt: Date()
                                             )
                                             self.saveNews(offlineNews)
                                             print("✅ Haber özeti ile birlikte kaydedildi!")
@@ -495,9 +506,10 @@ struct OfflineNews: Identifiable, Decodable, Encodable {
     let tarih: String
     let haber_url: String
     var ozet: String?  // Özet alanı eklendi
+    var savedAt: Date?  // Kaydetme tarihi - sıralama için
 
     enum CodingKeys: String, CodingKey {
-        case kaynak, resim_url, baslik, tarih, haber_url, ozet
+        case kaynak, resim_url, baslik, tarih, haber_url, ozet, savedAt
     }
 }
 
