@@ -9,7 +9,7 @@ struct ContentView: View {
     @State private var selectedTab: Int = 0
     @State private var showAIChat: Bool = false
     @State private var showPaywall: Bool = false
-    @StateObject private var subscriptionManager = SubscriptionManager.shared
+    @ObservedObject private var subscriptionManager = SubscriptionManager.shared
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -125,6 +125,14 @@ struct ContentView: View {
         }
         .sheet(isPresented: $showPaywall) {
             PaywallView()
+        }
+        .onAppear {
+            // Kullanıcı giriş yaptıysa ve subscription henüz kontrol edilmediyse kontrol et
+            if let user = authViewModel.user, !subscriptionManager.hasAIAccess {
+                Task {
+                    await subscriptionManager.checkSubscriptionFromDatabase(username: user.username)
+                }
+            }
         }
     }
 }

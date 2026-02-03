@@ -97,10 +97,11 @@ struct SplashScreenView: View {
                 // Haberleri arka planda yükle
                 newsViewModel.loadNews(resetPage: true, arama: "")
 
-                // Günlük abonelik kontrolü (kullanıcı giriş yaptıysa)
+                // Abonelik kontrolü (kullanıcı giriş yaptıysa)
                 if let user = authViewModel.user {
                     Task {
-                        await subscriptionManager.performDailyCheck(username: user.username)
+                        // Her uygulama açılışında database'den kontrol et
+                        await subscriptionManager.checkSubscriptionFromDatabase(username: user.username)
                     }
                 }
 
