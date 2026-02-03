@@ -125,6 +125,11 @@ class AuthViewModel: ObservableObject {
 
                             // Kullanıcı oturumunu kaydet
                             self.saveUserSession(user: loggedInUser)
+
+                            // Abonelik durumunu kontrol et
+                            Task {
+                                await SubscriptionManager.shared.checkSubscriptionFromDatabase(username: username)
+                            }
                         } else {
                             self.errorMessage = json["message"] as? String ?? "Giriş başarısız"
                         }
@@ -288,6 +293,11 @@ class AuthViewModel: ObservableObject {
             )
             self.user = user
             self.isLoggedIn = true
+
+            // Abonelik durumunu kontrol et
+            Task {
+                await SubscriptionManager.shared.checkSubscriptionFromDatabase(username: user.username)
+            }
         }
     }
 
