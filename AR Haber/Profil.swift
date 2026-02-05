@@ -359,6 +359,8 @@ struct Profil: View {
     @State private var selectedUserId: String? = nil
     @State private var isChatActive: Bool = false
     @State private var selectedTab: ProfileTab = .ozelAkis
+    @State private var agreedToTerms: Bool = false
+    @State private var showTermsSheet: Bool = false
     private var usr: String?
 
     var body: some View {
@@ -471,6 +473,27 @@ struct Profil: View {
                             SecureField("Şifre Tekrar", text: $confirmPassword)
                                 .textFieldStyle(RoundedBorderTextFieldStyle())
                                 .padding(.horizontal)
+
+                            // Kullanıcı Sözleşmesi Onay
+                            HStack {
+                                Button(action: { agreedToTerms.toggle() }) {
+                                    Image(systemName: agreedToTerms ? "checkmark.square.fill" : "square")
+                                        .foregroundColor(agreedToTerms ? .blue : .gray)
+                                        .font(.title2)
+                                }
+
+                                Text("Kullanıcı Sözleşmesi")
+                                    .foregroundColor(.blue)
+                                    .underline()
+                                    .onTapGesture {
+                                        showTermsSheet = true
+                                    }
+
+                                Text("'ni okudum ve kabul ediyorum.")
+                                    .font(.footnote)
+                                    .foregroundColor(.secondary)
+                            }
+                            .padding(.horizontal)
                         }
 
                         if !errorMessage.isEmpty {
@@ -515,6 +538,9 @@ struct Profil: View {
                 }
             }
         }
+        .sheet(isPresented: $showTermsSheet) {
+            TermsAndConditionsView()
+        }
     }
 
     func handleAuth() {
@@ -527,6 +553,11 @@ struct Profil: View {
 
         if !isLogin && password != confirmPassword {
             errorMessage = "Şifreler uyuşmuyor."
+            return
+        }
+
+        if !isLogin && !agreedToTerms {
+            errorMessage = "Kullanıcı sözleşmesini kabul etmelisiniz."
             return
         }
 
@@ -550,4 +581,36 @@ struct OtherFeatureView: View {
     var body: some View {
         Text("Diğer Özellikler Sayfası")
     }
+}
+
+// MARK: - Kullanıcı Sözleşmesi View (WebView)
+struct TermsAndConditionsView: View {
+    @Environment(\.dismiss) var dismiss
+
+    var body: some View {
+        NavigationView {
+            TermsWebView(url: URL(string: "https://armedia.live/kullanici.php")!)
+                .navigationTitle("Kullanıcı Sözleşmesi")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button("Kapat") {
+                            dismiss()
+                        }
+                    }
+                }
+        }
+    }
+}
+
+struct TermsWebView: UIViewRepresentable {
+    let url: URL
+
+    func makeUIView(context: Context) -> WKWebView {
+        let webView = WKWebView()
+        webView.load(URLRequest(url: url))
+        return webView
+    }
+
+    func updateUIView(_ uiView: WKWebView, context: Context) {}
 }

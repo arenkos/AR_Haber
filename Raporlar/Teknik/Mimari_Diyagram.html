@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AR Haber - Teknik Mimari Diyagrami</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.6.1/mermaid.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a365d 0%, #2c5282 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+        h1 {
+            color: white;
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .subtitle {
+            color: #a0aec0;
+            text-align: center;
+            margin-bottom: 40px;
+            font-size: 1.1em;
+        }
+        .diagram-section {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+        .section-title {
+            color: #1a365d;
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #3182ce;
+        }
+        .mermaid {
+            display: flex;
+            justify-content: center;
+            overflow-x: auto;
+        }
+        .legend {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+        .legend-text { color: #4a5568; font-size: 0.9em; }
+        .footer {
+            text-align: center;
+            color: #a0aec0;
+            margin-top: 30px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>AR Haber Mimari Diyagrami</h1>
+        <p class="subtitle">iOS Mobil Haber Uygulamasi - Teknik Yapi</p>
+
+        <!-- System Architecture -->
+        <div class="diagram-section">
+            <h2 class="section-title">1. Sistem Mimarisi</h2>
+            <div class="mermaid">
+flowchart TB
+    subgraph CLIENT["iOS Uygulama"]
+        UI["SwiftUI Views"]
+        VM["ViewModels<br/>(MVVM)"]
+        SM["Service Managers"]
+        STORE["Local Storage<br/>(UserDefaults/FileManager)"]
+    end
+
+    subgraph SERVICES["Harici Servisler"]
+        OPENAI["OpenAI API<br/>(GPT-3.5 Turbo)"]
+        ADMOB["Google AdMob"]
+        APNS["Apple Push<br/>Notification Service"]
+        STOREKIT["StoreKit 2<br/>(In-App Purchase)"]
+    end
+
+    subgraph BACKEND["Backend Sunucu"]
+        PHP["PHP 8.x<br/>REST API"]
+        DB[("MySQL/MariaDB<br/>Database")]
+    end
+
+    UI --> VM
+    VM --> SM
+    SM --> STORE
+    SM --> PHP
+    SM --> OPENAI
+    SM --> ADMOB
+    SM --> STOREKIT
+    PHP --> DB
+    APNS -.-> CLIENT
+
+    style CLIENT fill:#e6f3ff,stroke:#3182ce
+    style SERVICES fill:#f0fff4,stroke:#38a169
+    style BACKEND fill:#fff5f5,stroke:#e53e3e
+            </div>
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background:#e6f3ff;border:2px solid #3182ce"></div>
+                    <span class="legend-text">iOS Uygulama Katmani</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background:#f0fff4;border:2px solid #38a169"></div>
+                    <span class="legend-text">Harici Servisler</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background:#fff5f5;border:2px solid #e53e3e"></div>
+                    <span class="legend-text">Backend Sunucu</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Component Diagram -->
+        <div class="diagram-section">
+            <h2 class="section-title">2. Bilesen Diyagrami</h2>
+            <div class="mermaid">
+flowchart LR
+    subgraph VIEWS["Views (SwiftUI)"]
+        CV[ContentView]
+        GA[Genel_Akis]
+        PR[Profil]
+        KA[Kaynak]
+        KT[Kategori]
+        OA[Ozel_Akis]
+        LV[LikesView]
+        PW[PaywallView]
+    end
+
+    subgraph VIEWMODELS["ViewModels"]
+        AVM[AuthViewModel]
+        NVM[NewsViewModel]
+        SNM[SelectedNewsManager]
+        NSM[NewsSummaryManager]
+    end
+
+    subgraph MANAGERS["Service Managers"]
+        SUBM[SubscriptionManager]
+        OFFM[OfflineNewsManager]
+        OAIS[OpenAIService]
+    end
+
+    CV --> GA
+    CV --> KA
+    CV --> KT
+    CV --> PR
+    PR --> OA
+    PR --> LV
+
+    GA --> NVM
+    GA --> AVM
+    PR --> AVM
+
+    NVM --> SNM
+    NVM --> NSM
+
+    AVM --> SUBM
+    CV --> SUBM
+    GA --> OFFM
+    CV --> OAIS
+
+    style VIEWS fill:#ebf8ff,stroke:#3182ce
+    style VIEWMODELS fill:#faf5ff,stroke:#805ad5
+    style MANAGERS fill:#fffaf0,stroke:#dd6b20
+            </div>
+        </div>
+
+        <!-- Data Flow -->
+        <div class="diagram-section">
+            <h2 class="section-title">3. Veri Akis Diyagrami</h2>
+            <div class="mermaid">
+sequenceDiagram
+    participant U as Kullanici
+    participant V as SwiftUI View
+    participant VM as ViewModel
+    participant API as Backend API
+    participant DB as Database
+    participant AI as OpenAI
+
+    U->>V: Uygulama Ac
+    V->>VM: loadUserSession()
+    VM->>VM: UserDefaults oku
+
+    U->>V: Haber Listele
+    V->>VM: loadNews()
+    VM->>API: GET /haberler_mobil.php
+    API->>DB: SELECT haberler
+    DB-->>API: Haber verileri
+    API-->>VM: JSON Response
+    VM-->>V: @Published news[]
+    V-->>U: Haber Listesi Goster
+
+    U->>V: Haber Ozeti Iste
+    V->>VM: fetchSummary()
+    VM->>API: GET /ozet_olustur.php
+    API->>AI: GPT-3.5 API Call
+    AI-->>API: Ozet metni
+    API-->>VM: JSON Response
+    VM-->>V: Ozet goster
+            </div>
+        </div>
+
+        <!-- Database Schema -->
+        <div class="diagram-section">
+            <h2 class="section-title">4. Veritabani Semasi</h2>
+            <div class="mermaid">
+erDiagram
+    KULLANICILAR {
+        int id PK
+        string kullanici UK
+        string sifre
+        string mail
+        string telefon
+        string ad_soyad
+        string device_token
+        string abonelik
+        datetime abonelik_bitis
+        string transaction_id
+    }
+
+    HABERLER {
+        int id PK
+        string baslik
+        string kaynak
+        string kategori
+        string resim_url
+        string haber_url
+        datetime tarih
+        int tiklanma
+    }
+
+    TEPKILER {
+        int id PK
+        int haber_id FK
+        string kullanici FK
+        boolean begen
+        boolean begenme
+        datetime tarih
+    }
+
+    YORUMLAR {
+        int id PK
+        int haber_id FK
+        string kullanici FK
+        text yorum
+        datetime tarih
+    }
+
+    KULLANICILAR ||--o{ TEPKILER : "verir"
+    KULLANICILAR ||--o{ YORUMLAR : "yazar"
+    HABERLER ||--o{ TEPKILER : "alir"
+    HABERLER ||--o{ YORUMLAR : "icerir"
+            </div>
+        </div>
+
+        <!-- Subscription Flow -->
+        <div class="diagram-section">
+            <h2 class="section-title">5. Abonelik Akisi</h2>
+            <div class="mermaid">
+flowchart TD
+    A[Kullanici Abonelik Ister] --> B{Giris Yapildi mi?}
+    B -->|Hayir| C[Giris Ekranina Yonlendir]
+    B -->|Evet| D[PaywallView Goster]
+    D --> E[Plan Sec]
+    E --> F[StoreKit 2 Purchase]
+    F --> G{Odeme Basarili?}
+    G -->|Hayir| H[Hata Mesaji]
+    G -->|Evet| I[Apple Receipt Al]
+    I --> J[Backend validate_receipt.php]
+    J --> K[Veritabanina Kaydet]
+    K --> L[SubscriptionManager Guncelle]
+    L --> M[Premium Ozellikler Aktif]
+
+    style A fill:#e6f3ff
+    style M fill:#c6f6d5
+    style H fill:#fed7d7
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>AR Haber Teknik Dokumantasyon - Subat 2026</p>
+            <p>Bu diyagramlar interaktif olarak goruntulenebilir</p>
+        </div>
+    </div>
+
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'base',
+            themeVariables: {
+                primaryColor: '#3182ce',
+                primaryTextColor: '#1a365d',
+                primaryBorderColor: '#2c5282',
+                lineColor: '#4a5568',
+                secondaryColor: '#e6f3ff',
+                tertiaryColor: '#f7fafc'
+            }
+        });
+    </script>
+</body>
+</html>

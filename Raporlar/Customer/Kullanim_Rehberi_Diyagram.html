@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AR Haber - Kullanim Rehberi</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.6.1/mermaid.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 {
+            color: white;
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        .subtitle {
+            color: rgba(255,255,255,0.9);
+            text-align: center;
+            margin-bottom: 40px;
+            font-size: 1.2em;
+        }
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        }
+        .card-title {
+            color: #1e40af;
+            font-size: 1.4em;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .card-title span {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        .mermaid {
+            display: flex;
+            justify-content: center;
+            overflow-x: auto;
+            padding: 20px 0;
+        }
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .feature-item {
+            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+            border-radius: 12px;
+            padding: 20px;
+            border-left: 4px solid #3b82f6;
+        }
+        .feature-item h3 {
+            color: #1e40af;
+            font-size: 1.1em;
+            margin-bottom: 8px;
+        }
+        .feature-item p {
+            color: #64748b;
+            font-size: 0.95em;
+            line-height: 1.5;
+        }
+        .emoji { font-size: 1.5em; margin-right: 8px; }
+        .tip-box {
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+            border-left: 4px solid #f59e0b;
+        }
+        .tip-box h4 {
+            color: #92400e;
+            margin-bottom: 8px;
+        }
+        .tip-box p {
+            color: #78350f;
+            font-size: 0.95em;
+        }
+        .footer {
+            text-align: center;
+            color: rgba(255,255,255,0.8);
+            margin-top: 30px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>AR Haber Kullanim Rehberi</h1>
+        <p class="subtitle">Uygulamayi kolayca kullanmayi ogreniniz</p>
+
+        <!-- Application Flow -->
+        <div class="card">
+            <h2 class="card-title"><span>1</span> Uygulama Akisi</h2>
+            <div class="mermaid">
+flowchart LR
+    A[Uygulamayi Ac] --> B{Giris Yapildi mi?}
+    B -->|Evet| C[Ana Sayfa]
+    B -->|Hayir| D[Giris/Kayit Ekrani]
+    D --> E[Giris Yap veya Kayit Ol]
+    E --> C
+    C --> F[Haberleri Gor]
+    F --> G[Haber Sec]
+    G --> H[Detayli Oku]
+
+    style A fill:#dbeafe,stroke:#3b82f6,stroke-width:2px
+    style C fill:#dcfce7,stroke:#22c55e,stroke-width:2px
+    style H fill:#fef3c7,stroke:#f59e0b,stroke-width:2px
+            </div>
+        </div>
+
+        <!-- Features Overview -->
+        <div class="card">
+            <h2 class="card-title"><span>2</span> Temel Ozellikler</h2>
+            <div class="feature-grid">
+                <div class="feature-item">
+                    <h3><span class="emoji">📰</span>Haber Okuma</h3>
+                    <p>11 farkli kaynaktan guncel haberleri okuyun. Habere tiklayarak detaya gidin.</p>
+                </div>
+                <div class="feature-item">
+                    <h3><span class="emoji">🔍</span>Arama</h3>
+                    <p>Arama cubuguna anahtar kelime yazarak istediginiz konuda haber bulun.</p>
+                </div>
+                <div class="feature-item">
+                    <h3><span class="emoji">📁</span>Kaynak Filtreleme</h3>
+                    <p>Sadece belirli bir haber sitesinden gelen haberleri gorun.</p>
+                </div>
+                <div class="feature-item">
+                    <h3><span class="emoji">🏷️</span>Kategori Filtreleme</h3>
+                    <p>Ekonomi, spor, teknoloji gibi kategorilere gore filtreleyin.</p>
+                </div>
+                <div class="feature-item">
+                    <h3><span class="emoji">❤️</span>Begeni Sistemi</h3>
+                    <p>Haberleri begenin veya begenmeyin, tercihleriniz kaydedilsin.</p>
+                </div>
+                <div class="feature-item">
+                    <h3><span class="emoji">💾</span>Cevrimdisi Kayit</h3>
+                    <p>Haberleri kaydedin, internet olmadan da okuyun.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Features -->
+        <div class="card">
+            <h2 class="card-title"><span>3</span> AI Ozellikleri (Premium)</h2>
+            <div class="mermaid">
+flowchart TB
+    subgraph OZET["Haber Ozetleme"]
+        O1[Haberi Sola Kaydir] --> O2[AI Ozeti Hazirlar]
+        O2 --> O3[Kisa Ozet Goster]
+    end
+
+    subgraph CHAT["AI Asistan"]
+        C1[Yildiz Butonuna Tikla] --> C2[Sohbet Ekrani Acilir]
+        C2 --> C3[Sorunu Sor]
+        C3 --> C4[AI Cevap Verir]
+    end
+
+    style OZET fill:#e0e7ff,stroke:#6366f1
+    style CHAT fill:#fce7f3,stroke:#ec4899
+            </div>
+            <div class="tip-box">
+                <h4>💡 Ipucu</h4>
+                <p>AI ozellikleri icin 'AI Pro' veya 'Premium' aboneligi gereklidir. Uzun haberleri saniyeler icinde ozetleyin!</p>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="card">
+            <h2 class="card-title"><span>4</span> Uygulama Menusu</h2>
+            <div class="mermaid">
+flowchart LR
+    subgraph MENU["Alt Menu"]
+        M1["🏠 Ana Sayfa"]
+        M2["📰 Kaynak"]
+        M3["📂 Kategori"]
+        M4["👤 Profil"]
+        M5["✨ AI Buton"]
+    end
+
+    M1 --> A1[Tum Haberler]
+    M2 --> A2[Kaynak Secimi]
+    M3 --> A3[Kategori Secimi]
+    M4 --> A4[Hesap ve Ayarlar]
+    M5 --> A5[AI Sohbet]
+
+    style M1 fill:#dbeafe,stroke:#3b82f6
+    style M2 fill:#dcfce7,stroke:#22c55e
+    style M3 fill:#fef3c7,stroke:#f59e0b
+    style M4 fill:#fce7f3,stroke:#ec4899
+    style M5 fill:#e0e7ff,stroke:#8b5cf6
+            </div>
+        </div>
+
+        <!-- Profile Tabs -->
+        <div class="card">
+            <h2 class="card-title"><span>5</span> Profil Sayfasi</h2>
+            <div class="mermaid">
+flowchart LR
+    P[Profil] --> T1["📊 Ozel Akis<br/>Size ozel haberler"]
+    P --> T2["❤️ Begenilenler<br/>Begendiginiz haberler"]
+    P --> T3["🔖 Kaydedilenler<br/>Cevrimdisi haberler"]
+    P --> S["⚙️ Ayarlar"]
+
+    S --> S1[Hesap Bilgileri]
+    S --> S2[Bildirimler]
+    S --> S3[Abonelik]
+    S --> S4[Cikis Yap]
+
+    style P fill:#dbeafe,stroke:#3b82f6,stroke-width:2px
+    style T1 fill:#e0e7ff,stroke:#6366f1
+    style T2 fill:#fce7f3,stroke:#ec4899
+    style T3 fill:#dcfce7,stroke:#22c55e
+    style S fill:#f1f5f9,stroke:#64748b
+            </div>
+        </div>
+
+        <!-- Subscription Plans -->
+        <div class="card">
+            <h2 class="card-title"><span>6</span> Abonelik Planlari</h2>
+            <div class="mermaid">
+flowchart TB
+    subgraph FREE["Ucretsiz"]
+        F1[Haber Okuma]
+        F2[Filtreleme]
+        F3[Begeni]
+    end
+
+    subgraph ADFREE["Reklamsiz"]
+        A1[Ucretsiz Ozellikler]
+        A2[+ Reklam Yok]
+    end
+
+    subgraph AIPRO["AI Pro"]
+        AI1[Ucretsiz Ozellikler]
+        AI2[+ AI Ozetleme]
+        AI3[+ AI Asistan]
+    end
+
+    subgraph PREMIUM["Premium ⭐"]
+        P1[Tum Ozellikler]
+        P2[Reklamsiz]
+        P3[AI Ozellikleri]
+    end
+
+    style FREE fill:#f1f5f9,stroke:#94a3b8
+    style ADFREE fill:#dbeafe,stroke:#3b82f6
+    style AIPRO fill:#e0e7ff,stroke:#8b5cf6
+    style PREMIUM fill:#fef3c7,stroke:#f59e0b,stroke-width:3px
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>AR Haber Kullanici Rehberi - Subat 2026</p>
+            <p>Keyifli okumalar dileriz! 📰</p>
+        </div>
+    </div>
+
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'base',
+            themeVariables: {
+                primaryColor: '#3b82f6',
+                primaryTextColor: '#1e40af',
+                primaryBorderColor: '#2563eb',
+                lineColor: '#64748b',
+                secondaryColor: '#dbeafe',
+                tertiaryColor: '#f8fafc',
+                fontSize: '14px'
+            },
+            flowchart: {
+                curve: 'basis',
+                padding: 20
+            }
+        });
+    </script>
+</body>
+</html>
