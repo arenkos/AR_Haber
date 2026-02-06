@@ -188,17 +188,17 @@ class AuthViewModel: ObservableObject {
                 if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
                     if let status = json["status"] as? String {
                         DispatchQueue.main.async {
+                            let message = json["message"] as? String
                             switch status {
                             case "success":
-                                self.errorMessage = "Kayıt Başarılı"
-                                self.showAlert(message: self.errorMessage)  // self kullanıldı
+                                self.errorMessage = message ?? "Kayıt başarılı! Email adresinize gönderilen doğrulama linkine tıklayarak hesabınızı aktifleştiriniz."
+                                self.showAlert(message: self.errorMessage)
                             case "exist":
-                                self.errorMessage = "Bu bilgilerle kayıtlı kullanıcı zaten var!"
-                                self.showAlert(message: self.errorMessage)  // self kullanıldı
+                                self.errorMessage = message ?? "Bu bilgilerle kayıtlı kullanıcı zaten var!"
+                                self.showAlert(message: self.errorMessage)
                             default:
-                                self.errorMessage =
-                                    json["message"] as? String ?? "Bilinmeyen hata oluştu"
-                                self.showAlert(message: self.errorMessage)  // self kullanıldı
+                                self.errorMessage = message ?? "Bilinmeyen hata oluştu"
+                                self.showAlert(message: self.errorMessage)
                             }
                         }
                     }
@@ -454,6 +454,17 @@ struct Profil: View {
                             TextField("Ad Soyad", text: $ad_soyad)
                                 .textFieldStyle(RoundedBorderTextFieldStyle())
                                 .padding(.horizontal)
+
+                            TextField("Telefon", text: $telefon)
+                                .textFieldStyle(RoundedBorderTextFieldStyle())
+                                .padding(.horizontal)
+                                .keyboardType(.phonePad)
+
+                            TextField("E-posta", text: $email)
+                                .textFieldStyle(RoundedBorderTextFieldStyle())
+                                .padding(.horizontal)
+                                .keyboardType(.emailAddress)
+                                .autocapitalization(.none)
                         }
 
                         TextField("Kullanıcı Adı", text: $username)
@@ -551,14 +562,36 @@ struct Profil: View {
             return
         }
 
-        if !isLogin && password != confirmPassword {
-            errorMessage = "Şifreler uyuşmuyor."
-            return
-        }
+        if !isLogin {
+            if ad_soyad.isEmpty {
+                errorMessage = "Ad Soyad giriniz."
+                return
+            }
 
-        if !isLogin && !agreedToTerms {
-            errorMessage = "Kullanıcı sözleşmesini kabul etmelisiniz."
-            return
+            if telefon.isEmpty {
+                errorMessage = "Telefon numarası giriniz."
+                return
+            }
+
+            if email.isEmpty {
+                errorMessage = "E-posta adresi giriniz."
+                return
+            }
+
+            if password != confirmPassword {
+                errorMessage = "Şifreler uyuşmuyor."
+                return
+            }
+
+            if password.count < 6 {
+                errorMessage = "Şifre en az 6 karakter olmalıdır."
+                return
+            }
+
+            if !agreedToTerms {
+                errorMessage = "Kullanıcı sözleşmesini kabul etmelisiniz."
+                return
+            }
         }
 
         if isLogin {
