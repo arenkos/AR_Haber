@@ -5,11 +5,11 @@
 //  Created by Aren Koş on 10.02.2025.
 //
 
-import SwiftUI
-import CommonCrypto
-import WebKit
 import Combine
+import CommonCrypto
 import GoogleMobileAds
+import SwiftUI
+import WebKit
 
 struct LikesView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
@@ -24,15 +24,17 @@ struct LikesView: View {
     @State private var dislikedNewsIDs: Set<Int> = []
     @State private var arama = ""
     @State private var interstitial: InterstitialAd?
-    
+
     init() {
         loadInterstitial()
     }
-    
+
     func loadInterstitial() {
         let request = Request()
-        InterstitialAd.load(with: AdConstants.currentInterstitialID,
-                          request: request) { [self] ad, error in
+        InterstitialAd.load(
+            with: AdConstants.currentInterstitialID,
+            request: request
+        ) { [self] ad, error in
             if let error = error {
                 print("Failed to load interstitial ad with error: \(error.localizedDescription)")
                 return
@@ -40,7 +42,7 @@ struct LikesView: View {
             interstitial = ad
         }
     }
-    
+
     // Kaynak Logo Eşlemesi
     func mapSource(kaynak: String) -> String {
         switch kaynak {
@@ -58,30 +60,34 @@ struct LikesView: View {
         default: return "default_logo"
         }
     }
-    
+
     // Filtered news based on search text
     var filteredNews: [NewsItem] {
         if arama.isEmpty {
             return viewModel.news.filter { likedNewsIDs.contains($0.id) }
         } else {
-            return viewModel.news.filter { $0.baslik.localizedCaseInsensitiveContains(arama) && likedNewsIDs.contains($0.id)}
+            return viewModel.news.filter {
+                $0.baslik.localizedCaseInsensitiveContains(arama) && likedNewsIDs.contains($0.id)
+            }
         }
     }
-    
+
     var body: some View {
         //Text("Beğenilenler Sayfası")
         VStack {
-            
+
             SearchBar(text: $arama)
                 .onChange(of: arama) { oldValue, newValue in
                     if viewModel.news.isEmpty {
                         if let user = authViewModel.user {
-                            viewModel.loadlikedNews(resetPage: true, arama: arama,isSearch: true, username: user.username)
+                            viewModel.loadlikedNews(
+                                resetPage: true, arama: arama, isSearch: true,
+                                username: user.username)
                         }
                     }
                     loadUserReactions()
                 }
-            
+
             ScrollView {
                 NewsListView(
                     news: filteredNews,
@@ -96,10 +102,10 @@ struct LikesView: View {
                     },
                     onReaction: toggleReaction,
                     isLiked: { newsID in
-                        likedNewsIDs.contains(newsID) // Kullanıcının beğendiği haberlerin kontrolü
+                        likedNewsIDs.contains(newsID)  // Kullanıcının beğendiği haberlerin kontrolü
                     },
                     isDisliked: { newsID in
-                        dislikedNewsIDs.contains(newsID) // Kullanıcının beğenmediği haberlerin kontrolü
+                        dislikedNewsIDs.contains(newsID)  // Kullanıcının beğenmediği haberlerin kontrolü
                     },
                     onComment: { news in
                         selectedNewsManager.selectedNews = news
@@ -109,7 +115,8 @@ struct LikesView: View {
                         if !viewModel.isLoading {
                             loadUserReactions()
                             if let user = authViewModel.user {
-                                viewModel.loadlikedNews(resetPage: false, arama: arama, username: user.username)
+                                viewModel.loadlikedNews(
+                                    resetPage: false, arama: arama, username: user.username)
                             }
                         }
                     }
@@ -136,7 +143,8 @@ struct LikesView: View {
                 loadUserReactions()
                 if viewModel.news.isEmpty {
                     if let user = authViewModel.user {
-                        viewModel.loadlikedNews(resetPage: true, arama: "",isSearch: false, username: user.username)
+                        viewModel.loadlikedNews(
+                            resetPage: true, arama: "", isSearch: false, username: user.username)
                     }
                 }
             }
@@ -144,49 +152,54 @@ struct LikesView: View {
                 viewModel.news.removeAll()
                 if viewModel.news.isEmpty {
                     if let user = authViewModel.user {
-                        viewModel.loadlikedNews(resetPage: true, arama: "",isSearch: false, username: user.username)
+                        viewModel.loadlikedNews(
+                            resetPage: true, arama: "", isSearch: false, username: user.username)
                     }
                 }
                 loadUserReactions()
             }
             .sheet(isPresented: $showCommentsView) {
-                if let selectedNews = selectedNewsManager.selectedNews,
-                   let user = authViewModel.user {
-                    WebViewContainer(urlString: "https://armedia.live/yorumlar.php?id=\(selectedNews.id)&username=\(user.username)") {
-                        showCommentsView = false
-                    }
-                    .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height-100) // Tam ekran genişlik
+                if let selectedNews = selectedNewsManager.selectedNews {
+                    CommentsView(newsId: selectedNews.id, newsUrl: selectedNews.haber_url)
+                        .environmentObject(authViewModel)
                 }
             }
             .sheet(isPresented: $showWebView) {
                 if let selectedNews = selectedNewsManager.selectedNews {
                     // Tıklanma kaydı - ID kullanarak
-                    WebViewContainer(urlString: "https://armedia.live/tiklanma.php?id=\(selectedNews.id)") {
+                    WebViewContainer(
+                        urlString: "https://armedia.live/tiklanma.php?id=\(selectedNews.id)"
+                    ) {
                         showWebView = false
                     }
                     .frame(width: 0, height: 0)
                     .hidden()
-                    
+
                     // Haber URL'ini akıllıca seç
                     let newsURL: String = {
                         // Eğer haber_url geçerliyse onu kullan
-                        if !selectedNews.haber_url.isEmpty && selectedNews.haber_url.starts(with: "http") {
+                        if !selectedNews.haber_url.isEmpty
+                            && selectedNews.haber_url.starts(with: "http")
+                        {
                             return selectedNews.haber_url
                         }
                         // Aksi takdirde ID bazlı endpoint kullan
                         return "https://armedia.live/haber.php?id=\(selectedNews.id)"
                     }()
-                    
+
                     WebViewContainer(urlString: newsURL) {
                         showWebView = false
                     }
-                    .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height-100)
+                    .frame(
+                        width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height - 100
+                    )
                 }
             }
         }
         .onAppear {
             if let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-               let root = scene.windows.first?.rootViewController {
+                let root = scene.windows.first?.rootViewController
+            {
                 interstitial?.present(from: root)
                 loadInterstitial()
             }
@@ -194,33 +207,34 @@ struct LikesView: View {
     }
     func loadUserReactions(completion: @escaping () -> Void = {}) {
         guard let user = authViewModel.user else { return }
-        
+
         let urlString = "https://armedia.live/load_user_reactions.php?user=\(user.username)"
         guard let url = URL(string: urlString) else {
             print("Invalid URL")
             return
         }
-        
+
         let task = URLSession.shared.dataTask(with: url) { (data, response, error) in
             if let error = error {
                 print("Error: \(error)")
                 return
             }
-            
+
             guard let data = data else {
                 print("No data received")
                 return
             }
-            
+
             do {
-                let jsonResponse = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any]
+                let jsonResponse =
+                    try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any]
                 //print("JSON Response:", jsonResponse ?? "Invalid JSON") // Gelen JSON'u kontrol et
-                
+
                 if let jsonResponse = jsonResponse {
                     // Gelen veriyi doğru şekilde parse et
                     let likedIDs = (jsonResponse["liked"] as? [Int]) ?? []
                     let dislikedIDs = (jsonResponse["disliked"] as? [Int]) ?? []
-                    
+
                     DispatchQueue.main.async {
                         self.likedNewsIDs = Set(likedIDs)
                         self.dislikedNewsIDs = Set(dislikedIDs)
@@ -235,10 +249,10 @@ struct LikesView: View {
                 print("JSON parsing error: \(error)")
             }
         }
-        
+
         task.resume()
     }
-    
+
     func toggleReaction(for newsID: Int, isLike: Bool) {
         if isLike {
             if likedNewsIDs.contains(newsID) {
@@ -270,14 +284,19 @@ struct LikesView: View {
 
         //print("Reaction toggled: \(isLike ? "Liked" : "Disliked")")
     }
-    
+
     func sendReactionRequest(newsID: Int, begen: Int, begenme: Int) {
-        if let user = authViewModel.user{
-            guard let url = URL(string: "https://armedia.live/tepki_mobil.php?begenme=\(begenme)&begen=\(begen)&id=\(newsID)&user=\(user.username)") else { return }
-            
+        if let user = authViewModel.user {
+            guard
+                let url = URL(
+                    string:
+                        "https://armedia.live/tepki_mobil.php?begenme=\(begenme)&begen=\(begen)&id=\(newsID)&user=\(user.username)"
+                )
+            else { return }
+
             var request = URLRequest(url: url)
             request.httpMethod = "GET"
-            
+
             let task = URLSession.shared.dataTask(with: request) { data, response, error in
                 if let error = error {
                     print("API Request Error: \(error)")
@@ -296,7 +315,7 @@ struct LikesView: View {
     func isDisliked(newsID: Int) -> Bool {
         return dislikedNewsIDs.contains(newsID)
     }
-    func skip(){
-        
+    func skip() {
+
     }
 }

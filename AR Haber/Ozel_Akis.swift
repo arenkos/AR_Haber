@@ -145,7 +145,9 @@ struct Ozel_Akis: View {
                 loadTappedSources {
                     loadTappedCategories {
                         // Eğer kaynak veya kategoriler değiştiyse ya da ilk yüklemeyse haberleri yenile
-                        if !hasLoadedOnce || previousSources != tappedSources || previousCategories != tappedCategories {
+                        if !hasLoadedOnce || previousSources != tappedSources
+                            || previousCategories != tappedCategories
+                        {
                             viewModel.news.removeAll()
                             viewModel.loadfilteredNews(
                                 resetPage: true, arama: "",
@@ -179,18 +181,9 @@ struct Ozel_Akis: View {
                 }
             }
             .sheet(isPresented: $showCommentsView) {
-                if let selectedNews = selectedNewsManager.selectedNews,
-                    let user = authViewModel.user
-                {
-                    WebViewContainer(
-                        urlString:
-                            "https://armedia.live/yorumlar.php?id=\(selectedNews.id)&username=\(user.username)"
-                    ) {
-                        showCommentsView = false
-                    }
-                    .frame(
-                        width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height - 100
-                    )
+                if let selectedNews = selectedNewsManager.selectedNews {
+                    CommentsView(newsId: selectedNews.id, newsUrl: selectedNews.haber_url)
+                        .environmentObject(authViewModel)
                 }
             }
             .sheet(isPresented: $showWebView) {
