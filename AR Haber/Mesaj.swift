@@ -2,6 +2,14 @@ import Foundation
 import SwiftUI
 import WebKit
 
+// PreferenceKey for tracking scroll position
+struct ScrollOffsetPreferenceKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
+    }
+}
+
 // Mesaj yapısı
 struct Message: Identifiable, Codable {
     let id: Int
@@ -458,12 +466,21 @@ struct ChatView: View {
     @State private var urlToOpen: URLItem?  // Açılacak URL'yi tutacak değişken
     @State private var timer: Timer?  // Timer değişkeni
 
+    // WhatsApp-style scroll tracking
+    @State private var userSentMessage = false
+    @State private var isAtBottom = true
+    @State private var previousMessageCount = 0
+
+    // Keyboard tracking
+    @State private var keyboardHeight: CGFloat = 0
+    @State private var scrollProxy: ScrollViewProxy?
+
     let senderId: String
     let receiverId: String
     let newsItem: NewsItem?  // Haber bilgilerini tutacak değişken
 
     var body: some View {
-        VStack {
+        VStack(spacing: 0) {
             ScrollViewReader { scrollView in
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 10, pinnedViews: []) {
@@ -548,8 +565,38 @@ struct ChatView: View {
                         }
                     }
                     .padding()
+
+                    // Track scroll position with GeometryReader
+                    GeometryReader { geo in
+                        Color.clear
+                            .preference(
+                                key: ScrollOffsetPreferenceKey.self,
+                                value: geo.frame(in: .named("scroll")).minY)
+                    }
+                    .frame(height: 0)
+                }
+                .coordinateSpace(name: "scroll")
+                .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
+                    // Check if user is at bottom (within threshold)
+                    isAtBottom = value > -50
+                }
+                .onChange(of: chatService.messages.count) { oldCount, newCount in
+                    // WhatsApp-style scroll behavior
+                    if newCount > previousMessageCount {
+                        let shouldScroll = userSentMessage || isAtBottom
+                        if shouldScroll, let lastMessage = chatService.messages.first {
+                            withAnimation {
+                                scrollView.scrollTo(lastMessage.id, anchor: .bottom)
+                            }
+                        }
+                        userSentMessage = false
+                        previousMessageCount = newCount
+                    }
                 }
                 .onAppear {
+                    // Store scrollView proxy for keyboard-triggered scroll
+                    self.scrollProxy = scrollView
+
                     get_device_token(user: receiverId)
                     chatService.fetchMessages(senderId: senderId, receiverId: receiverId)
                     //chatServiceWebSocket.receiveMessage()
@@ -558,6 +605,7 @@ struct ChatView: View {
                         if let lastMessage = chatService.messages.first {
                             scrollView.scrollTo(lastMessage.id, anchor: .bottom)
                         }
+                        previousMessageCount = chatService.messages.count
                     }
                 }
                 .onDisappear {
@@ -588,11 +636,38 @@ struct ChatView: View {
             .padding()
         }
         .onAppear {
+            scrollProxy = nil  // Will be set by ScrollViewReader
             chatService.fetchMessages(senderId: senderId, receiverId: receiverId)
             startTimer()  // Timer'ı başlat
         }
         .onDisappear {
             stopTimer()  // Timer'ı durdur
+        }
+        .onReceive(
+            NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)
+        ) { notification in
+            if let keyboardFrame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey]
+                as? CGRect
+            {
+                withAnimation(.easeOut(duration: 0.25)) {
+                    keyboardHeight = keyboardFrame.height
+                }
+                // Scroll to bottom when keyboard appears
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    if let lastMessage = chatService.messages.first {
+                        withAnimation {
+                            scrollProxy?.scrollTo(lastMessage.id, anchor: .bottom)
+                        }
+                    }
+                }
+            }
+        }
+        .onReceive(
+            NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)
+        ) { _ in
+            withAnimation(.easeOut(duration: 0.25)) {
+                keyboardHeight = 0
+            }
         }
         .sheet(item: $urlToOpen) { item in
             WebViewContainer_Mesaj(urlString: item.url) {
@@ -670,12 +745,16 @@ struct ChatView: View {
     }
 
     func sendMessage() {
+        // Mark that user sent a message (for WhatsApp-style scroll)
+        userSentMessage = true
+
         // Klavyeyi kapat
         UIApplication.shared.sendAction(
             #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
 
         guard !messageText.isEmpty else {
             print("Mesaj gönderilemedi: Mesaj boş.")
+            userSentMessage = false
             return
         }
 
