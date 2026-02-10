@@ -21,6 +21,11 @@ struct AccountSettingsView: View {
     @State private var errorMessage = ""
     @State private var successMessage = ""
     @State private var webViewItem: WebViewItem? = nil
+    @State private var showDeleteAlert = false
+    @State private var showDeleteConfirmation = false
+    @State private var deleteConfirmText = ""
+    @State private var isDeleting = false
+    @State private var deleteError = ""
 
     var body: some View {
         List {
@@ -140,6 +145,34 @@ struct AccountSettingsView: View {
                         }
                     }
                 }
+
+                // MARK: - Hesabı Sil
+                Section {
+                    Button(action: {
+                        showDeleteAlert = true
+                    }) {
+                        HStack {
+                            Image(systemName: "trash.fill")
+                                .foregroundColor(.red)
+                            Text("Hesabımı Sil")
+                                .foregroundColor(.red)
+                                .fontWeight(.semibold)
+                        }
+                    }
+
+                    if !deleteError.isEmpty {
+                        Text(deleteError)
+                            .font(.caption)
+                            .foregroundColor(.red)
+                    }
+                } header: {
+                    Text("Hesap Yönetimi")
+                } footer: {
+                    Text(
+                        "Hesabınızı sildiğinizde tüm verileriniz kalıcı olarak silinir ve bu işlem geri alınamaz."
+                    )
+                    .font(.caption2)
+                }
             }
         }
         .listStyle(InsetGroupedListStyle())
@@ -163,6 +196,34 @@ struct AccountSettingsView: View {
                     }
                 }
             }
+        }
+        // MARK: - Delete Account First Alert
+        .alert("Hesabınızı Silmek İstediğinize Emin Misiniz?", isPresented: $showDeleteAlert) {
+            Button("Evet, Silmek İstiyorum", role: .destructive) {
+                showDeleteConfirmation = true
+            }
+            Button("İptal", role: .cancel) {}
+        } message: {
+            Text(
+                "Bu işlem geri alınamaz. Tüm verileriniz (yorumlar, mesajlar, tercihler) kalıcı olarak silinecektir."
+            )
+        }
+        // MARK: - Delete Account Confirmation
+        .alert("Son Onay", isPresented: $showDeleteConfirmation) {
+            TextField("SİL yazın", text: $deleteConfirmText)
+            Button("Hesabımı Kalıcı Olarak Sil", role: .destructive) {
+                if deleteConfirmText == "SİL" {
+                    deleteAccount()
+                } else {
+                    deleteError = "Onay metni hatalı. Lütfen 'SİL' yazın."
+                }
+                deleteConfirmText = ""
+            }
+            Button("İptal", role: .cancel) {
+                deleteConfirmText = ""
+            }
+        } message: {
+            Text("Onaylamak için aşağıya büyük harflerle 'SİL' yazın.")
         }
     }
 
@@ -227,6 +288,24 @@ struct AccountSettingsView: View {
                 }
             }
         }.resume()
+    }
+
+    func deleteAccount() {
+        guard let user = authViewModel.user else {
+            deleteError = "Kullanıcı bilgisi bulunamadı"
+            return
+        }
+
+        isDeleting = true
+        deleteError = ""
+
+        authViewModel.deleteAccount(username: user.username) { success, message in
+            isDeleting = false
+            if !success {
+                deleteError = message ?? "Hesap silinemedi. Lütfen tekrar deneyin."
+            }
+            // On success, AuthViewModel handles logout and cleanup
+        }
     }
 }
 

@@ -5,8 +5,8 @@
 //  Created by Aren Koş on 12.02.2025.
 //
 
-import SwiftUI
 import Foundation
+import SwiftUI
 
 struct OpenAIRequest: Codable {
     let model: String
@@ -28,17 +28,18 @@ struct Message_Summary: Codable {
 }
 
 class OpenAIService {
-    private let apiKey = "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" // OpenAI API anahtarınızı buraya ekleyin
+    private let apiKey =
+        "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"  // OpenAI API anahtarınızı buraya ekleyin
     private let apiUrl = "https://api.openai.com/v1/chat/completions"
 
     func summarize(text: String, completion: @escaping (String?) -> Void) {
         guard let url = URL(string: apiUrl) else { return }
-        
+
         let prompt = "Bu sitedeki haberi kısaca özetle: \(text)"
         let requestData = OpenAIRequest(
-            model: "gpt-3.5-turbo", 
-            messages: [["role": "user", "content": prompt]], 
-            temperature: 0.7, 
+            model: "gpt-3.5-turbo",
+            messages: [["role": "user", "content": prompt]],
+            temperature: 0.7,
             max_tokens: 100
         )
 
@@ -46,7 +47,7 @@ class OpenAIService {
         request.httpMethod = "POST"
         request.addValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-        
+
         do {
             let jsonData = try JSONEncoder().encode(requestData)
             request.httpBody = jsonData
@@ -71,10 +72,10 @@ class OpenAIService {
             }
         }.resume()
     }
-    
+
     func sendChatMessage(text: String, completion: @escaping (String?) -> Void) {
         guard let url = URL(string: apiUrl) else { return }
-        
+
         let requestData = OpenAIRequest(
             model: "gpt-3.5-turbo",
             messages: [["role": "user", "content": text]],
@@ -86,7 +87,7 @@ class OpenAIService {
         request.httpMethod = "POST"
         request.addValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-        
+
         do {
             let jsonData = try JSONEncoder().encode(requestData)
             request.httpBody = jsonData
@@ -118,13 +119,15 @@ struct NewsSummaryView: View {
     @State private var summary: String = ""
     @State private var fullSummary: String = ""
     @State private var isLoading: Bool = true
+    @State private var showConsentAlert: Bool = false
+    @ObservedObject private var consentManager = AIConsentManager.shared
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Haber Özeti")
                 .font(.title)
                 .bold()
-            
+
             if isLoading {
                 HStack(spacing: 12) {
                     ProgressView()
@@ -139,29 +142,42 @@ struct NewsSummaryView: View {
                     .padding()
                     .animation(.default, value: summary)
             }
-            
+
             Spacer()
         }
         .padding()
+        .aiConsentAlert(isPresented: $showConsentAlert) {
+            fetchSummary()
+        }
         .onAppear {
-            OpenAIService().summarize(text: newsText) { result in
+            if !consentManager.hasUserConsented {
                 isLoading = false
-                if let result = result {
-                    fullSummary = result
-                    startTypewriterEffect()
-                } else {
-                    fullSummary = "Özet oluşturulamadı."
-                    summary = fullSummary
-                }
+                showConsentAlert = true
+            } else {
+                fetchSummary()
             }
         }
     }
-    
+
+    private func fetchSummary() {
+        isLoading = true
+        OpenAIService().summarize(text: newsText) { result in
+            isLoading = false
+            if let result = result {
+                fullSummary = result
+                startTypewriterEffect()
+            } else {
+                fullSummary = "Özet oluşturulamadı."
+                summary = fullSummary
+            }
+        }
+    }
+
     private func startTypewriterEffect() {
         summary = ""
         var charIndex = 0
         let characters = Array(fullSummary)
-        
+
         Timer.scheduledTimer(withTimeInterval: 0.03, repeats: true) { timer in
             if charIndex < characters.count {
                 summary.append(characters[charIndex])
