@@ -1,3 +1,4 @@
+import AppTrackingTransparency
 import Combine
 import GoogleMobileAds
 import SwiftUI
@@ -143,7 +144,17 @@ struct WebViewContainer: UIViewRepresentable {
     var hideHeader: Bool = false
 
     func makeUIView(context: Context) -> WKWebView {
-        let webView = WKWebView()
+        let configuration = WKWebViewConfiguration()
+
+        // ATT izni reddedildiyse veya belirlenmemişse, cookie saklamayan non-persistent store kullan
+        if #available(iOS 14, *) {
+            let trackingStatus = ATTrackingManager.trackingAuthorizationStatus
+            if trackingStatus != .authorized {
+                configuration.websiteDataStore = WKWebsiteDataStore.nonPersistent()
+            }
+        }
+
+        let webView = WKWebView(frame: .zero, configuration: configuration)
         webView.navigationDelegate = context.coordinator
         return webView
     }
@@ -270,6 +281,9 @@ struct AIChatView: View {
     @State private var inputText: String = ""
     @State private var isLoading: Bool = false
     @State private var typingTimer: Timer?
+    @State private var showConsentAlert: Bool = false
+    @State private var pendingMessage: String? = nil
+    @ObservedObject private var consentManager = AIConsentManager.shared
     @Environment(\.dismiss) var dismiss
 
     var body: some View {
@@ -336,6 +350,9 @@ struct AIChatView: View {
                 }
             }
         }
+        .aiConsentAlert(isPresented: $showConsentAlert) {
+            sendPendingMessage()
+        }
         .onAppear {
             if messages.isEmpty {
                 var welcomeMessage = ChatMessage(
@@ -351,6 +368,13 @@ struct AIChatView: View {
 
     private func sendMessage() {
         guard !inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+
+        // Check AI consent before sending
+        if !consentManager.hasUserConsented {
+            pendingMessage = inputText
+            showConsentAlert = true
+            return
+        }
 
         var userMessage = ChatMessage(content: inputText, isUser: true)
         userMessage.displayedContent = inputText
@@ -378,6 +402,39 @@ struct AIChatView: View {
                 )
                 errorMessage.displayedContent = errorMessage.content
                 messages.append(errorMessage)
+            }
+        }
+    }
+
+    /// Send the pending message after consent is granted
+    private func sendPendingMessage() {
+        guard let pending = pendingMessage else { return }
+        pendingMessage = nil
+
+        var userMessage = ChatMessage(content: pending, isUser: true)
+        userMessage.displayedContent = pending
+        messages.append(userMessage)
+
+        inputText = ""
+        isLoading = true
+
+        OpenAIService().sendChatMessage(text: pending) { response in
+            isLoading = false
+            if let response = response {
+                var aiMessage = ChatMessage(content: response, isUser: false)
+                aiMessage.displayedContent = ""
+                aiMessage.isTyping = true
+                messages.append(aiMessage)
+
+                let messageIndex = messages.count - 1
+                startTypewriterEffect(for: messageIndex)
+            } else {
+                var errorMsg = ChatMessage(
+                    content: "Üzgünüm, bir hata oluştu. Lütfen tekrar deneyin.",
+                    isUser: false
+                )
+                errorMsg.displayedContent = errorMsg.content
+                messages.append(errorMsg)
             }
         }
     }

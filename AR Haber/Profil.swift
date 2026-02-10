@@ -128,7 +128,8 @@ class AuthViewModel: ObservableObject {
 
                             // Abonelik durumunu kontrol et
                             Task {
-                                await SubscriptionManager.shared.checkSubscriptionFromDatabase(username: username)
+                                await SubscriptionManager.shared.checkSubscriptionFromDatabase(
+                                    username: username)
                             }
                         } else {
                             self.errorMessage = json["message"] as? String ?? "Giriş başarısız"
@@ -191,10 +192,13 @@ class AuthViewModel: ObservableObject {
                             let message = json["message"] as? String
                             switch status {
                             case "success":
-                                self.errorMessage = message ?? "Kayıt başarılı! Email adresinize gönderilen doğrulama linkine tıklayarak hesabınızı aktifleştiriniz."
+                                self.errorMessage =
+                                    message
+                                    ?? "Kayıt başarılı! Email adresinize gönderilen doğrulama linkine tıklayarak hesabınızı aktifleştiriniz."
                                 self.showAlert(message: self.errorMessage)
                             case "exist":
-                                self.errorMessage = message ?? "Bu bilgilerle kayıtlı kullanıcı zaten var!"
+                                self.errorMessage =
+                                    message ?? "Bu bilgilerle kayıtlı kullanıcı zaten var!"
                                 self.showAlert(message: self.errorMessage)
                             default:
                                 self.errorMessage = message ?? "Bilinmeyen hata oluştu"
@@ -296,7 +300,8 @@ class AuthViewModel: ObservableObject {
 
             // Abonelik durumunu kontrol et
             Task {
-                await SubscriptionManager.shared.checkSubscriptionFromDatabase(username: user.username)
+                await SubscriptionManager.shared.checkSubscriptionFromDatabase(
+                    username: user.username)
             }
         }
     }
@@ -307,6 +312,69 @@ class AuthViewModel: ObservableObject {
         UserDefaults.standard.removeObject(forKey: "username")
         UserDefaults.standard.removeObject(forKey: "ad_soyad")
         UserDefaults.standard.setValue(false, forKey: "isLoggedIn")
+    }
+
+    // MARK: - Account Deletion
+    func deleteAccount(username: String, completion: @escaping (Bool, String?) -> Void) {
+        guard let url = URL(string: "https://armedia.live/hesap_sil.php") else {
+            completion(false, "Geçersiz URL")
+            return
+        }
+
+        let parameters: [String: String] = [
+            "username": username
+        ]
+
+        guard let postData = try? JSONSerialization.data(withJSONObject: parameters) else {
+            completion(false, "Veri formatı hatalı")
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = postData
+
+        URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
+            DispatchQueue.main.async {
+                if let error = error {
+                    completion(false, "Bağlantı hatası: \(error.localizedDescription)")
+                    return
+                }
+
+                guard let data = data else {
+                    completion(false, "Yanıt alınamadı")
+                    return
+                }
+
+                do {
+                    if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                        let status = json["status"] as? String
+                    {
+                        if status == "success" {
+                            // Clear all local data
+                            self?.isLoggedIn = false
+                            self?.user = nil
+                            self?.offlineNewsManager.deleteAllSavedNews()
+                            self?.clearUserSession()
+
+                            // Clear AI consent and blocked users
+                            UserDefaults.standard.removeObject(forKey: "aiDataConsent")
+                            UserDefaults.standard.removeObject(forKey: "blockedUsers")
+
+                            completion(true, nil)
+                        } else {
+                            let message = json["message"] as? String ?? "Hesap silinemedi"
+                            completion(false, message)
+                        }
+                    } else {
+                        completion(false, "Yanıt formatı hatalı")
+                    }
+                } catch {
+                    completion(false, "Yanıt işlenemedi: \(error.localizedDescription)")
+                }
+            }
+        }.resume()
     }
 }
 
@@ -455,7 +523,7 @@ struct Profil: View {
                                 .textFieldStyle(RoundedBorderTextFieldStyle())
                                 .padding(.horizontal)
 
-                            TextField("Telefon", text: $telefon)
+                            TextField("Telefon (Opsiyonel)", text: $telefon)
                                 .textFieldStyle(RoundedBorderTextFieldStyle())
                                 .padding(.horizontal)
                                 .keyboardType(.phonePad)
@@ -488,9 +556,12 @@ struct Profil: View {
                             // Kullanıcı Sözleşmesi Onay
                             HStack {
                                 Button(action: { agreedToTerms.toggle() }) {
-                                    Image(systemName: agreedToTerms ? "checkmark.square.fill" : "square")
-                                        .foregroundColor(agreedToTerms ? .blue : .gray)
-                                        .font(.title2)
+                                    Image(
+                                        systemName: agreedToTerms
+                                            ? "checkmark.square.fill" : "square"
+                                    )
+                                    .foregroundColor(agreedToTerms ? .blue : .gray)
+                                    .font(.title2)
                                 }
 
                                 Text("Kullanıcı Sözleşmesi")
@@ -568,10 +639,7 @@ struct Profil: View {
                 return
             }
 
-            if telefon.isEmpty {
-                errorMessage = "Telefon numarası giriniz."
-                return
-            }
+            // Telefon opsiyonel — zorunlu değil
 
             if email.isEmpty {
                 errorMessage = "E-posta adresi giriniz."
