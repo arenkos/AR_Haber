@@ -341,6 +341,10 @@ struct CommentsView: View {
         }
         .onAppear {
             viewModel.loadComments(newsId: newsId)
+            // Sunucudan engellenen kullanıcıları yükle
+            if let user = authViewModel.user {
+                ContentModerationManager.shared.loadBlockedUsers(username: user.username)
+            }
         }
     }
 

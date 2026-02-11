@@ -49,6 +49,38 @@ class ContentModerationManager: ObservableObject {
         blockedUsers.remove(username.lowercased())
     }
 
+    /// Sunucudan engellenen kullanıcılar listesini çeker ve yerel listeyi günceller
+    func loadBlockedUsers(username: String, completion: @escaping () -> Void = {}) {
+        guard
+            let url = URL(string: "https://armedia.live/get_blocked_users.php?username=\(username)")
+        else {
+            completion()
+            return
+        }
+
+        URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
+            DispatchQueue.main.async {
+                guard let data = data, error == nil else {
+                    completion()
+                    return
+                }
+
+                do {
+                    if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                        let status = json["status"] as? String,
+                        status == "success",
+                        let users = json["blocked_users"] as? [String]
+                    {
+                        self?.blockedUsers = Set(users.map { $0.lowercased() })
+                    }
+                } catch {
+                    print("Engellenen kullanıcılar yüklenemedi: \(error)")
+                }
+                completion()
+            }
+        }.resume()
+    }
+
     // MARK: - Content Filtering
 
     /// Returns true if text contains prohibited content
