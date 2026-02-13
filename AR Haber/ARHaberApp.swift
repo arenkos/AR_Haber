@@ -8,6 +8,7 @@ import UserNotifications
 struct ARHaberApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @StateObject var authViewModel = AuthViewModel()
+    @Environment(\.scenePhase) var scenePhase
 
     var body: some Scene {
         WindowGroup {
@@ -15,7 +16,11 @@ struct ARHaberApp: App {
                 .environmentObject(authViewModel)
                 .onAppear {
                     registerForPushNotifications()
-                    requestTrackingPermission()
+                }
+                .onChange(of: scenePhase) { newPhase in
+                    if newPhase == .active {
+                        requestTrackingPermission()
+                    }
                 }
         }
     }
@@ -36,20 +41,19 @@ func registerForPushNotifications() {
 func requestTrackingPermission() {
     // iOS 14+ için ATT izni iste
     if #available(iOS 14, *) {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            ATTrackingManager.requestTrackingAuthorization { status in
-                switch status {
-                case .authorized:
-                    print("Tracking izni verildi")
-                case .denied:
-                    print("Tracking izni reddedildi")
-                case .notDetermined:
-                    print("Tracking izni belirlenmedi")
-                case .restricted:
-                    print("Tracking kısıtlı")
-                @unknown default:
-                    print("Bilinmeyen tracking durumu")
-                }
+        // Delay kaldırıldı, scenePhase içinde çağrılacak
+        ATTrackingManager.requestTrackingAuthorization { status in
+            switch status {
+            case .authorized:
+                print("Tracking izni verildi")
+            case .denied:
+                print("Tracking izni reddedildi")
+            case .notDetermined:
+                print("Tracking izni beklendi")
+            case .restricted:
+                print("Tracking kısıtlı")
+            @unknown default:
+                print("Bilinmeyen tracking durumu")
             }
         }
     }

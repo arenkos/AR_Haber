@@ -243,6 +243,22 @@ struct CommentsView: View {
                     }
                 }
 
+                // MARK: - EULA Disclaimer
+                VStack(spacing: 4) {
+                    Text("Topluluk kurallarına uymayan içerikler kaldırılacaktır.")
+                        .font(.caption2)
+                        .foregroundColor(.gray)
+
+                    Link(
+                        "Kullanıcı Sözleşmesi (EULA)",
+                        destination: URL(string: "https://armedia.live/kullanici.php")!
+                    )
+                    .font(.caption2)
+                    .foregroundColor(.blue)
+                }
+                .padding(.vertical, 8)
+                .background(Color(.systemGroupedBackground))
+
                 Divider()
 
                 // Comment Input

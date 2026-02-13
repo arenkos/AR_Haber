@@ -62,6 +62,18 @@ struct AccountSettingsView: View {
                         value: user.telefon.isEmpty ? "Belirtilmemiş" : user.telefon)
                 }
 
+                // MARK: - Abonelik
+                Section(header: Text("Abonelik")) {
+                    NavigationLink(destination: PaywallView()) {
+                        HStack {
+                            Image(systemName: "crown.fill")
+                                .foregroundColor(.yellow)
+                            Text("Premium Üyelik Yönetimi")
+                                .foregroundColor(.primary)
+                        }
+                    }
+                }
+
                 // MARK: - Şifre Değiştir
                 Section(header: Text("Şifre Değiştir")) {
                     SecureField("Yeni Şifre", text: $newPassword)
