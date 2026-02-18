@@ -5,6 +5,7 @@
 //  Created by Aren Koş on 7.02.2025.
 //
 
+import AppTrackingTransparency
 import Combine
 import GoogleMobileAds
 import SwiftUI
@@ -94,10 +95,7 @@ struct AdBannerView: UIViewRepresentable {
         ])
 
         // Reklam yükle
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-            let request = Request()
-            bannerView.load(request)
-        }
+        loadAdWithATTCheck(bannerView: bannerView)
 
         return containerView
     }
@@ -144,10 +142,7 @@ struct GADBannerViewController: UIViewControllerRepresentable {
         ])
 
         // Reklam yüklemeyi geciktir
-        DispatchQueue.main.asyncAfter(deadline: .now() + AdConstants.requestDelay) {
-            let request = Request()
-            bannerView.load(request)
-        }
+        loadAdWithATTCheck(bannerView: bannerView)
 
         return viewController
     }
@@ -167,4 +162,29 @@ struct GADBannerViewController: UIViewControllerRepresentable {
             print("Banner reklam yüklenemedi: \(error.localizedDescription)")
         }
     }
+}
+
+// Helper to check ATT and load ad
+private func loadAdWithATTCheck(bannerView: BannerView, attempt: Int = 0) {
+    // iOS 14+ control
+    if #available(iOS 14, *) {
+        let status = ATTrackingManager.trackingAuthorizationStatus
+        if status == .notDetermined {
+            // Henüz izin verilmedi veya reddedilmedi, biraz bekle ve tekrar dene
+            if attempt < 10 {  // Max 10 deneme (yaklaşık 10-20 sn)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                    loadAdWithATTCheck(bannerView: bannerView, attempt: attempt + 1)
+                }
+            } else {
+                // Zaman aşımı, yine de yükle (reklamsız veya varsayılan)
+                let request = Request()
+                bannerView.load(request)
+            }
+            return
+        }
+    }
+
+    // İzin durumu belli (authorized, denied, restricted) veya iOS < 14
+    let request = Request()
+    bannerView.load(request)
 }

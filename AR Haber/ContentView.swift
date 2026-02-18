@@ -128,6 +128,9 @@ struct ContentView: View {
             PaywallView()
         }
         .onAppear {
+            // ATT İzni İste
+            requestTrackingPermission()
+
             // Kullanıcı giriş yaptıysa ve subscription henüz kontrol edilmediyse kontrol et
             if let user = authViewModel.user, !subscriptionManager.hasAIAccess {
                 Task {

@@ -170,6 +170,7 @@ struct CommentsView: View {
     @State private var showContentFilterAlert = false
     @State private var selectedComment: Comment? = nil
     @State private var reportReason = ""
+    @State private var showLoginAlert = false
     @Environment(\.dismiss) private var dismiss
 
     let newsId: Int
@@ -362,6 +363,17 @@ struct CommentsView: View {
                 ContentModerationManager.shared.loadBlockedUsers(username: user.username)
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("RequireLogin"))) {
+            _ in
+            // Show login required alert
+            // Since we are in a view, we can use a state to show alert
+            showLoginAlert = true
+        }
+        .alert("Giriş Gerekli", isPresented: $showLoginAlert) {
+            Button("Tamam", role: .cancel) {}
+        } message: {
+            Text("Bu işlemi yapmak için lütfen giriş yapın.")
+        }
     }
 
     private func sendComment() {
@@ -465,17 +477,28 @@ struct CommentItemView: View {
 
                 Spacer()
 
-                // Report/Block menu — only show if logged in and not own comment
-                if isLoggedIn && comment.kullanici != currentUsername {
+                // Report/Block menu — show for everyone except own comment
+                if comment.kullanici != currentUsername {
                     Menu {
                         Button(role: .destructive) {
-                            onReport()
+                            if isLoggedIn {
+                                onReport()
+                            } else {
+                                // Trigger login alert (handled by parent or notification)
+                                NotificationCenter.default.post(
+                                    name: NSNotification.Name("RequireLogin"), object: nil)
+                            }
                         } label: {
                             Label("Şikayet Et", systemImage: "flag.fill")
                         }
 
                         Button(role: .destructive) {
-                            onBlock()
+                            if isLoggedIn {
+                                onBlock()
+                            } else {
+                                NotificationCenter.default.post(
+                                    name: NSNotification.Name("RequireLogin"), object: nil)
+                            }
                         } label: {
                             Label("Kullanıcıyı Engelle", systemImage: "hand.raised.fill")
                         }

@@ -138,6 +138,15 @@ struct AccountSettingsView: View {
 
                 // MARK: - Uygulama Bilgisi
                 Section(header: Text("Uygulama")) {
+                    NavigationLink(destination: BlockedUsersView()) {
+                        HStack {
+                            Image(systemName: "hand.raised.fill")
+                                .foregroundColor(.red)
+                            Text("Engellenen Kullanıcılar")
+                                .foregroundColor(.primary)
+                        }
+                    }
+
                     HStack {
                         Text("Versiyon")
                         Spacer()

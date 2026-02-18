@@ -518,6 +518,35 @@ struct Profil: View {
                             .fontWeight(.bold)
                             .padding(.top, 40)
 
+                        // Premium Button for Guest Users (Apple Review Requirement)
+                        Button(action: {
+                            // Show Paywall
+                            let windowScene =
+                                UIApplication.shared.connectedScenes.first as? UIWindowScene
+                            let rootVC = windowScene?.windows.first?.rootViewController
+                            let paywallVC = UIHostingController(rootView: PaywallView())
+                            rootVC?.present(paywallVC, animated: true)
+                        }) {
+                            HStack {
+                                Image(systemName: "crown.fill")
+                                Text("Premium'a Geç")
+                            }
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .padding()
+                            .frame(maxWidth: .infinity)
+                            .background(
+                                LinearGradient(
+                                    colors: [.yellow, .orange],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .cornerRadius(12)
+                            .shadow(radius: 5)
+                            .padding(.horizontal)
+                        }
+
                         if !isLogin {
                             TextField("Ad Soyad", text: $ad_soyad)
                                 .textFieldStyle(RoundedBorderTextFieldStyle())
