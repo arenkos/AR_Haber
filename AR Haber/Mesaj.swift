@@ -462,6 +462,11 @@ struct ChatView: View {
     @StateObject private var chatServiceWebSocket = ChatWebSocketService()
     @EnvironmentObject var authViewModel: AuthViewModel
     @StateObject private var chatService = ChatService()
+    @StateObject private var moderationManager = ContentModerationManager.shared
+    @State private var showBlockAlert = false
+    @State private var showReportAlert = false
+    @State private var messageToReport: Message?
+    @State private var reportReason = ""
     @State private var messageText = ""
     @State private var urlToOpen: URLItem?  // Açılacak URL'yi tutacak değişken
     @State private var timer: Timer?  // Timer değişkeni
@@ -484,7 +489,12 @@ struct ChatView: View {
             ScrollViewReader { scrollView in
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 10, pinnedViews: []) {
-                        ForEach(chatService.messages.reversed()) { message in  // Listeyi ters çeviriyoruz
+                        ForEach(
+                            chatService.messages.reversed().filter {
+                                !moderationManager.isBlocked($0.sender_id)
+                                    && !moderationManager.containsProhibitedContent($0.text)
+                            }
+                        ) { message in  // Listeyi ters çeviriyoruz ve engellenenleri filtreliyoruz
                             HStack {
                                 if message.sender_id == senderId {
                                     Spacer()
@@ -562,6 +572,17 @@ struct ChatView: View {
                                 }
                             }
                             .id(message.id)
+                            .contextMenu {
+                                if message.sender_id != senderId {
+                                    Button(role: .destructive) {
+                                        reportContent(message: message)
+                                    } label: {
+                                        Label(
+                                            "Haber Ver / Raporla",
+                                            systemImage: "exclamationmark.triangle")
+                                    }
+                                }
+                            }
                         }
                     }
                     .padding()
@@ -674,7 +695,62 @@ struct ChatView: View {
                 urlToOpen = nil  // Kapatma işlemi
             }
         }
+        .navigationTitle(receiverId)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button(action: { showBlockAlert = true }) {
+                    Image(systemName: "hand.raised.fill")
+                        .foregroundColor(.red)
+                }
+            }
+        }
+        .alert("Kullanıcıyı Engelle", isPresented: $showBlockAlert) {
+            Button("İptal", role: .cancel) {}
+            Button("Engelle", role: .destructive) {
+                blockUser()
+            }
+        } message: {
+            Text(
+                "\(receiverId) adlı kullanıcıyı engellemek istediğinize emin misiniz? Bu kullanıcıdan bir daha mesaj almayacaksınız ve geliştirici bilgilendirilecek."
+            )
+        }
+        .alert("İçeriği Raporla", isPresented: $showReportAlert) {
+            TextField("Şikayet nedeni...", text: $reportReason)
+            Button("İptal", role: .cancel) { reportReason = "" }
+            Button("Raporla", role: .destructive) {
+                submitReport()
+            }
+        } message: {
+            Text("Lütfen bu mesajı neden rapor ettiğinizi belirtin.")
+        }
     }
+
+    private func blockUser() {
+        moderationManager.blockUserOnServer(blockerUsername: senderId, blockedUsername: receiverId)
+        { success in
+            // Locally refreshed via StateObject
+        }
+    }
+
+    private func reportContent(message: Message) {
+        messageToReport = message
+        reportReason = ""
+        showReportAlert = true
+    }
+
+    private func submitReport() {
+        guard let message = messageToReport, !reportReason.isEmpty else { return }
+        moderationManager.reportContent(
+            type: "message",
+            contentId: message.id,
+            reason: reportReason,
+            reporterUsername: senderId,
+            reportedUsername: message.sender_id
+        ) { success, msg in
+            print("Reported: \(msg)")
+        }
+    }
+
     func get_device_token(user: String) {
         guard
             let url = URL(

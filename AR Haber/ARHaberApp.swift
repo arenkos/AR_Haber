@@ -17,7 +17,11 @@ struct ARHaberApp: App {
                 .onAppear {
                     registerForPushNotifications()
                 }
-
+                .onChange(of: scenePhase) { newPhase in
+                    if newPhase == .active {
+                        requestTrackingPermission()
+                    }
+                }
         }
     }
 }

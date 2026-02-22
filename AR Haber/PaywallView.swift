@@ -10,6 +10,7 @@ import SwiftUI
 
 struct PaywallView: View {
     @Environment(\.dismiss) var dismiss
+    @Environment(\.openURL) var openURL
     @EnvironmentObject var authViewModel: AuthViewModel
     @StateObject private var subscriptionManager = SubscriptionManager.shared
     @State private var selectedProduct: Product?
@@ -43,7 +44,7 @@ struct PaywallView: View {
                     // Restore Button
                     restoreButton
 
-                    // Terms
+                    // Terms and Links
                     termsSection
                 }
                 .padding()
@@ -155,13 +156,45 @@ struct PaywallView: View {
 
     // MARK: - Terms Section
     private var termsSection: some View {
-        VStack(spacing: 8) {
-            Text("Abonelik, seçilen süre sonunda otomatik olarak yenilenir.")
-            Text("İstediğiniz zaman Ayarlar'dan iptal edebilirsiniz.")
+        VStack(spacing: 12) {
+            Text("Premium Abonelik (Auto-Renewing)")
+                .font(.caption)
+                .fontWeight(.bold)
+                .foregroundColor(.primary)
+
+            Text(
+                "Aboneliğiniz seçilen süre sonunda (aylık vb.) otomatik olarak yenilenir. Yenileme tarihinden 24 saat önce iptal etmediğiniz takdirde ücret hesabınızdan tahsil edilecektir. Aboneliğinizi cihazınızın App Store Ayarlarından yönetebilir ve iptal edebilirsiniz."
+            )
+            .font(.caption2)
+            .foregroundColor(.gray)
+            .multilineTextAlignment(.center)
+            .padding(.horizontal)
+
+            HStack(spacing: 20) {
+                Button(action: {
+                    if let url = URL(string: "https://armedia.live/kullanici.php") {
+                        openURL(url)
+                    }
+                }) {
+                    Text("Kullanım Koşulları (EULA)")
+                        .font(.caption)
+                        .foregroundColor(.blue)
+                        .underline()
+                }
+
+                Button(action: {
+                    if let url = URL(string: "https://armedia.live/gizlilik.php") {
+                        openURL(url)
+                    }
+                }) {
+                    Text("Gizlilik Politikası")
+                        .font(.caption)
+                        .foregroundColor(.blue)
+                        .underline()
+                }
+            }
         }
-        .font(.caption)
-        .foregroundColor(.gray)
-        .multilineTextAlignment(.center)
+        .padding(.top, 10)
     }
 
     // MARK: - Purchase Action
