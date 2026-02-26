@@ -223,36 +223,7 @@ struct CommentsView: View {
                     }
                     Spacer()
                 } else {
-                    ScrollView {
-                        LazyVStack(spacing: 12) {
-                            ForEach(viewModel.filteredComments) { comment in
-                                let isOwn =
-                                    comment.kullanici == (authViewModel.user?.username ?? "")
-                                CommentItemView(
-                                    comment: comment,
-                                    isLoggedIn: authViewModel.isLoggedIn,
-                                    currentUsername: authViewModel.user?.username ?? "",
-                                    onReport: {
-                                        if isOwn {
-                                            showSelfActionAlert = true
-                                        } else {
-                                            selectedComment = comment
-                                            showReportAlert = true
-                                        }
-                                    },
-                                    onBlock: {
-                                        if isOwn {
-                                            showSelfActionAlert = true
-                                        } else {
-                                            selectedComment = comment
-                                            showBlockAlert = true
-                                        }
-                                    }
-                                )
-                            }
-                        }
-                        .padding()
-                    }
+                    commentsListView
                 }
 
                 // MARK: - EULA Disclaimer
@@ -389,6 +360,39 @@ struct CommentsView: View {
             Button("Tamam", role: .cancel) {}
         } message: {
             Text("Bu işlemi yapmak için lütfen giriş yapın.")
+        }
+    }
+
+    // MARK: - Extracted to help Swift type-checker
+    private var commentsListView: some View {
+        ScrollView {
+            LazyVStack(spacing: 12) {
+                ForEach(viewModel.filteredComments) { comment in
+                    let isOwn = comment.kullanici == (authViewModel.user?.username ?? "")
+                    CommentItemView(
+                        comment: comment,
+                        isLoggedIn: authViewModel.isLoggedIn,
+                        currentUsername: authViewModel.user?.username ?? "",
+                        onReport: {
+                            if isOwn {
+                                showSelfActionAlert = true
+                            } else {
+                                selectedComment = comment
+                                showReportAlert = true
+                            }
+                        },
+                        onBlock: {
+                            if isOwn {
+                                showSelfActionAlert = true
+                            } else {
+                                selectedComment = comment
+                                showBlockAlert = true
+                            }
+                        }
+                    )
+                }
+            }
+            .padding()
         }
     }
 
