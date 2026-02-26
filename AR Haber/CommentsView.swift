@@ -168,6 +168,7 @@ struct CommentsView: View {
     @State private var showReportSuccess = false
     @State private var showBlockSuccess = false
     @State private var showContentFilterAlert = false
+    @State private var showSelfActionAlert = false
     @State private var selectedComment: Comment? = nil
     @State private var reportReason = ""
     @State private var showLoginAlert = false
@@ -225,17 +226,27 @@ struct CommentsView: View {
                     ScrollView {
                         LazyVStack(spacing: 12) {
                             ForEach(viewModel.filteredComments) { comment in
+                                let isOwn =
+                                    comment.kullanici == (authViewModel.user?.username ?? "")
                                 CommentItemView(
                                     comment: comment,
                                     isLoggedIn: authViewModel.isLoggedIn,
                                     currentUsername: authViewModel.user?.username ?? "",
                                     onReport: {
-                                        selectedComment = comment
-                                        showReportAlert = true
+                                        if isOwn {
+                                            showSelfActionAlert = true
+                                        } else {
+                                            selectedComment = comment
+                                            showReportAlert = true
+                                        }
                                     },
                                     onBlock: {
-                                        selectedComment = comment
-                                        showBlockAlert = true
+                                        if isOwn {
+                                            showSelfActionAlert = true
+                                        } else {
+                                            selectedComment = comment
+                                            showBlockAlert = true
+                                        }
                                     }
                                 )
                             }
@@ -354,6 +365,11 @@ struct CommentsView: View {
             } message: {
                 Text(
                     "Yorumunuz uygunsuz içerik barındırmaktadır. Lütfen düzenleyip tekrar deneyin.")
+            }
+            .alert("Bilgilendirme", isPresented: $showSelfActionAlert) {
+                Button("Tamam", role: .cancel) {}
+            } message: {
+                Text("Kendi yorumunuzu şikayet edemez veya kendinizi engelleyemezsiniz.")
             }
         }
         .onAppear {
@@ -477,37 +493,34 @@ struct CommentItemView: View {
 
                 Spacer()
 
-                // Report/Block menu — show for everyone except own comment
-                if comment.kullanici != currentUsername {
-                    Menu {
-                        Button(role: .destructive) {
-                            if isLoggedIn {
-                                onReport()
-                            } else {
-                                // Trigger login alert (handled by parent or notification)
-                                NotificationCenter.default.post(
-                                    name: NSNotification.Name("RequireLogin"), object: nil)
-                            }
-                        } label: {
-                            Label("Şikayet Et", systemImage: "flag.fill")
-                        }
-
-                        Button(role: .destructive) {
-                            if isLoggedIn {
-                                onBlock()
-                            } else {
-                                NotificationCenter.default.post(
-                                    name: NSNotification.Name("RequireLogin"), object: nil)
-                            }
-                        } label: {
-                            Label("Kullanıcıyı Engelle", systemImage: "hand.raised.fill")
+                // Report/Block menu — visible on all comments
+                Menu {
+                    Button(role: .destructive) {
+                        if isLoggedIn {
+                            onReport()
+                        } else {
+                            NotificationCenter.default.post(
+                                name: NSNotification.Name("RequireLogin"), object: nil)
                         }
                     } label: {
-                        Image(systemName: "ellipsis")
-                            .font(.body)
-                            .foregroundColor(.secondary)
-                            .padding(8)
+                        Label("Şikayet Et", systemImage: "flag.fill")
                     }
+
+                    Button(role: .destructive) {
+                        if isLoggedIn {
+                            onBlock()
+                        } else {
+                            NotificationCenter.default.post(
+                                name: NSNotification.Name("RequireLogin"), object: nil)
+                        }
+                    } label: {
+                        Label("Kullanıcıyı Engelle", systemImage: "hand.raised.fill")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .font(.body)
+                        .foregroundColor(.secondary)
+                        .padding(8)
                 }
             }
 
