@@ -267,8 +267,11 @@ class NewsViewModel: ObservableObject {
                         return
                     }
 
+                    // Duplicate haberleri filtrele
+                    let existingIDs = Set(self.news.map { $0.id })
+                    let uniqueNewItems = fetchedNewsItems.filter { !existingIDs.contains($0.id) }
                     let startIndex = self.news.count
-                    self.news.append(contentsOf: fetchedNewsItems)
+                    self.news.append(contentsOf: uniqueNewItems)
                     self.currentPage += 1
 
                     // Debug: İlk 3 haberi logla
@@ -393,8 +396,11 @@ class NewsViewModel: ObservableObject {
                         return
                     }
 
+                    // Duplicate haberleri filtrele
+                    let existingIDs = Set(self.news.map { $0.id })
+                    let uniqueNewItems = fetchedNewsItems.filter { !existingIDs.contains($0.id) }
                     let startIndex = self.news.count
-                    self.news.append(contentsOf: fetchedNewsItems)
+                    self.news.append(contentsOf: uniqueNewItems)
                     self.currentPage += 1
 
                     // --- Download Images Logic (Identical modification as in loadNews) ---
@@ -494,8 +500,11 @@ class NewsViewModel: ObservableObject {
                         return
                     }
 
+                    // Duplicate haberleri filtrele
+                    let existingIDs = Set(self.news.map { $0.id })
+                    let uniqueNewItems = fetchedNewsItems.filter { !existingIDs.contains($0.id) }
                     let startIndex = self.news.count
-                    self.news.append(contentsOf: fetchedNewsItems)
+                    self.news.append(contentsOf: uniqueNewItems)
                     self.currentPage += 1
 
                     // --- Download Images Logic (Identical modification as in loadNews) ---
@@ -734,7 +743,7 @@ struct NewsListView: View {
 
     var body: some View {
         LazyVStack {
-            ForEach(Array(news.enumerated()), id: \.element.id) { index, newsItem in
+            ForEach(Array(news.enumerated()), id: \.offset) { index, newsItem in
                 VStack {
                     NewsItemView(
                         news: newsItem,
@@ -760,10 +769,12 @@ struct NewsListView: View {
 
                     if (index + 1) % 4 == 0 {
                         Text("-Sponsorlu Bağlantı-")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
                             .frame(maxWidth: .infinity, alignment: .center)
-                        AdBannerView()
-                            .frame(maxWidth: .infinity, minHeight: 200, maxHeight: 200)  // Genişlik esnek, yükseklik sabit
-                            .padding(.horizontal, 10)  // Sağdan ve soldan 10 birim boşluk bırak
+                        SmartAdBannerView()
+                            .frame(maxWidth: .infinity, minHeight: 260)
+                            .padding(.horizontal, 10)
                     }
                 }
             }
