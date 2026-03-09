@@ -23,6 +23,10 @@ struct Genel_Akis: View {
     @State private var dislikedNewsIDs: Set<Int> = []
     @State private var arama = ""
     @State private var interstitial: InterstitialAd?
+    @State private var newsClickCount: Int = 0
+
+    // 60 saniyede bir otomatik interstitial için timer
+    let interstitialTimer = Timer.publish(every: 60, on: .main, in: .common).autoconnect()
 
     init() {
         loadInterstitial()
@@ -39,6 +43,18 @@ struct Genel_Akis: View {
                 return
             }
             interstitial = ad
+        }
+    }
+
+    // Interstitial reklamı göster ve sonraki için yükle
+    func showInterstitialAd() {
+        if !SubscriptionManager.shared.hasAdFreeAccess {
+            if let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                let root = scene.windows.first?.rootViewController
+            {
+                interstitial?.present(from: root)
+                loadInterstitial()
+            }
         }
     }
 
@@ -185,12 +201,12 @@ struct Genel_Akis: View {
             }
         }
         .onAppear {
-            if let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-                let root = scene.windows.first?.rootViewController
-            {
-                interstitial?.present(from: root)
-                loadInterstitial()
-            }
+            // Sayfa geçişinde interstitial göster
+            showInterstitialAd()
+        }
+        // 60 saniyede bir otomatik interstitial
+        .onReceive(interstitialTimer) { _ in
+            showInterstitialAd()
         }
     }
     func loadUserReactions(completion: @escaping () -> Void = {}) {

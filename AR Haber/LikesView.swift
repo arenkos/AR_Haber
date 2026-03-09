@@ -197,7 +197,8 @@ struct LikesView: View {
             }
         }
         .onAppear {
-            if let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+            if !SubscriptionManager.shared.hasAdFreeAccess,
+                let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
                 let root = scene.windows.first?.rootViewController
             {
                 interstitial?.present(from: root)
