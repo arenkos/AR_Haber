@@ -11,12 +11,24 @@ struct SplashScreenView: View {
     @State private var isActive = false
     @State private var logoOpacity: Double = 0.0
     @State private var shimmerOffset: CGFloat = -1.0
+    @AppStorage("dont_show_onboarding") private var dontShowOnboarding = false
+    @State private var showOnboarding = false
     @EnvironmentObject var authViewModel: AuthViewModel
     @StateObject private var newsViewModel = NewsViewModel()
     @ObservedObject private var subscriptionManager = SubscriptionManager.shared
 
     var body: some View {
-        if isActive {
+        if showOnboarding {
+            OnboardingView(onFinish: { dontShowAgain in
+                if dontShowAgain {
+                    dontShowOnboarding = true
+                }
+                withAnimation {
+                    showOnboarding = false
+                    isActive = true
+                }
+            })
+        } else if isActive {
             ContentView()
                 .environmentObject(authViewModel)
                 .environmentObject(newsViewModel)
@@ -119,7 +131,11 @@ struct SplashScreenView: View {
 
                 // 2 saniye sonra ana ekrana geç
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                    isActive = true
+                    if !dontShowOnboarding {
+                        showOnboarding = true
+                    } else {
+                        isActive = true
+                    }
                 }
             }
         }
