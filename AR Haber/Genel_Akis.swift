@@ -58,23 +58,7 @@ struct Genel_Akis: View {
         }
     }
 
-    // Kaynak Logo Eşlemesi
-    func mapSource(kaynak: String) -> String {
-        switch kaynak {
-        case "A HABER": return "ahaber"
-        case "CNN TÜRK": return "cnn"
-        case "CUMHURİYET": return "cumhuriyet"
-        case "HABERTÜRK": return "haberturk"
-        case "MİLLİYET": return "milliyet"
-        case "NTV": return "ntv"
-        case "SABAH": return "sabah"
-        case "SHIFTDELETE.NET": return "sdn"
-        case "SÖZCÜ": return "sozcu"
-        case "TRT HABER": return "trt"
-        case "WEBTEKNO": return "webtekno"
-        default: return "default_logo"
-        }
-    }
+
 
     // Filtered news based on search text
     var filteredNews: [NewsItem] {
@@ -97,7 +81,7 @@ struct Genel_Akis: View {
             ScrollView {
                 NewsListView(
                     news: arama.isEmpty ? viewModel.news : filteredNews,
-                    mapSource: mapSource,
+                    mapSource: logoFileName(for:),
                     isLoading: viewModel.isLoading,
                     onNewsSelected: { news in
                         selectedNewsManager.selectedNews = news

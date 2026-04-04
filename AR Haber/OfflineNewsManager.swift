@@ -530,22 +530,7 @@ struct OfflineNewsListView: View {
             }
         }
     }
-    func mapSource(kaynak: String) -> String {
-        switch kaynak {
-        case "A HABER": return "ahaber"
-        case "CNN TÜRK": return "cnn"
-        case "CUMHURİYET": return "cumhuriyet"
-        case "HABERTÜRK": return "haberturk"
-        case "MİLLİYET": return "milliyet"
-        case "NTV": return "ntv"
-        case "SABAH": return "sabah"
-        case "SHIFTDELETE.NET": return "sdn"
-        case "SÖZCÜ": return "sozcu"
-        case "TRT HABER": return "trt"
-        case "WEBTEKNO": return "webtekno"
-        default: return "default_logo"
-        }
-    }
+
     var body: some View {
         NavigationView {
             VStack {
@@ -559,7 +544,6 @@ struct OfflineNewsListView: View {
                 List(filteredNews) { news in
                     OfflineNewsRow(
                         news: news,
-                        mapSource: mapSource,
                         onTapGesture: {
                             selectedWebNews = news
                         },
@@ -588,10 +572,7 @@ struct OfflineNewsListView: View {
                 }
             }
             .sheet(item: $selectedSummaryNews) { news in
-                OfflineHaberOzetiView(
-                    news: news,
-                    mapSource: mapSource
-                )
+                OfflineHaberOzetiView(news: news)
             }
         }
         .navigationViewStyle(.stack)
@@ -634,7 +615,6 @@ class WebViewNavigationDelegate: NSObject, WKNavigationDelegate {
 // MARK: - Offline Haber Satırı (Kaydırmalı)
 struct OfflineNewsRow: View {
     let news: OfflineNews
-    let mapSource: (String) -> String
     let onTapGesture: () -> Void
     let onSummaryTap: () -> Void
     let onDelete: () -> Void
@@ -680,10 +660,7 @@ struct OfflineNewsRow: View {
             // Ana içerik
             VStack(alignment: .center, spacing: 8) {
                 // Kaynak Logosu
-                Image(mapSource(news.kaynak))
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 50, height: 50)
+                CachedLogoImage(sourceName: news.kaynak, height: 50)
 
                 // Haber Görseli
                 if let uiImage = UIImage(contentsOfFile: news.resim_url) {
@@ -753,7 +730,6 @@ struct OfflineNewsRow: View {
 struct OfflineHaberOzetiView: View {
     @Environment(\.dismiss) var dismiss
     let news: OfflineNews
-    let mapSource: (String) -> String
 
     var body: some View {
         NavigationStack {
@@ -778,13 +754,8 @@ struct OfflineHaberOzetiView: View {
                             )
                     }
 
-                    // Kaynak Logosu ve Tarih
                     HStack {
-                        let kaynak = mapSource(news.kaynak)
-                        Image(kaynak)
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 40, height: 40)
+                        CachedLogoImage(sourceName: news.kaynak, height: 40)
 
                         Text(news.kaynak)
                             .font(.subheadline)

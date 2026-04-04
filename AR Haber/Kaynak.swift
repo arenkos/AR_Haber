@@ -16,22 +16,7 @@ struct Kaynak: View {
     @State private var isLoading = true // To show loading state
     @State var tappedSources: Set<String> = [] // To keep track of tapped kaynak
 
-    func mapSource(category: String) -> String {
-        switch category {
-        case "A HABER": return "ahaber"
-        case "CNN TÜRK": return "cnn"
-        case "CUMHURİYET": return "cumhuriyet"
-        case "HABERTÜRK": return "haberturk"
-        case "MİLLİYET": return "milliyet"
-        case "NTV": return "ntv"
-        case "SABAH": return "sabah"
-        case "SHIFTDELETE.NET": return "sdn"
-        case "SÖZCÜ": return "sozcu"
-        case "TRT HABER": return "trt"
-        case "WEBTEKNO": return "webtekno"
-        default: return "default_logo"
-        }
-    }
+
 
     var body: some View {
         VStack {
@@ -40,18 +25,8 @@ struct Kaynak: View {
                     .progressViewStyle(CircularProgressViewStyle())
             } else {
                 List(kaynak, id: \.self) { category in
-                    HStack {/*
-                        AsyncImage(url: URL(string: "https://armedia.live/logo/" + mapSource(category: category) + ".png?v=\(Date().timeIntervalSince1970)")) { image in
-                            image.resizable()
-                                .scaledToFit()
-                                .frame(height: 20)
-                        } placeholder: {
-                            ProgressView()
-                        }*/
-                        Image(mapSource(category: category))
-                            .resizable()
-                            .scaledToFit()
-                            .frame(height: 20)
+                    HStack {
+                        CachedLogoImage(sourceName: category, height: 20)
 
                         Spacer()
 
