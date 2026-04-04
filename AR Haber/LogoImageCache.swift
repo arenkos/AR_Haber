@@ -28,7 +28,7 @@ func logoFileName(for sourceName: String) -> String {
         ("ç", "c"), ("Ç", "c"),
         ("ı", "i"), ("İ", "i")
     ]
-    var result = sourceName.lowercased()
+    var result = sourceName.lowercased(with: Locale(identifier: "tr"))
     for (tr, en) in turkishMap {
         result = result.replacingOccurrences(of: String(tr), with: String(en))
     }
