@@ -12,84 +12,130 @@ import GoogleMobileAds
 
 struct Kaynak: View {
     @EnvironmentObject var authViewModel: AuthViewModel
-    @State private var kaynak: [String] = [] // To hold fetched kaynak
-    @State private var isLoading = true // To show loading state
-    @State var tappedSources: Set<String> = [] // To keep track of tapped kaynak
-
-
+    @State private var groupedSources: [(lang: String, sources: [String])] = []
+    @State private var isLoading = true
+    @State var tappedSources: Set<String> = []
+    @State private var collapsedSections: Set<String> = []
 
     var body: some View {
         VStack {
             if isLoading {
-                ProgressView("Loading kaynak...") // Loading indicator
+                ProgressView("Loading kaynak...")
                     .progressViewStyle(CircularProgressViewStyle())
             } else {
-                List(kaynak, id: \.self) { category in
-                    HStack {
-                        CachedLogoImage(sourceName: category, height: 20)
+                List {
+                    ForEach(groupedSources, id: \.lang) { group in
+                        Section(header: languageHeader(for: group.lang, isExpanded: !collapsedSections.contains(group.lang))) {
+                            if !collapsedSections.contains(group.lang) {
+                                ForEach(group.sources, id: \.self) { category in
+                                    HStack {
+                                        CachedLogoImage(sourceName: category, height: 20)
 
-                        Spacer()
+                                        Spacer()
 
-                        Button(action: {
-                            toggleBell(for: category)
-                        }) {
-                            Image(systemName: tappedSources.contains(category) ? "bell.fill" : "bell")
-                                .foregroundColor(tappedSources.contains(category) ? .yellow : .gray)
-                                .imageScale(.large)
+                                        Button(action: {
+                                            toggleBell(for: category)
+                                        }) {
+                                            Image(systemName: tappedSources.contains(category) ? "bell.fill" : "bell")
+                                                .foregroundColor(tappedSources.contains(category) ? .yellow : .gray)
+                                                .imageScale(.large)
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
             }
         }
         .onAppear {
-            fetchSources()
-            loadTappedSources() // Load selected kaynak from the database
+            fetchSourcesGrouped()
+            loadTappedSources()
         }
     }
 
-    // Function to fetch kaynak
-    func fetchSources() {
-        let urlString = "https://armedia.live/fetch_kaynak.php"
+    // Dil başlığı oluştur
+    @ViewBuilder
+    func languageHeader(for langCode: String, isExpanded: Bool) -> some View {
+        HStack(spacing: 6) {
+            Text(flagEmoji(for: langCode))
+                .font(.headline)
+            Text(langCode)
+                .font(.headline)
+                .fontWeight(.bold)
+            Spacer()
+            Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                .foregroundColor(.secondary)
+        }
+        .padding(.vertical, 8)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            withAnimation {
+                if collapsedSections.contains(langCode) {
+                    collapsedSections.remove(langCode)
+                } else {
+                    collapsedSections.insert(langCode)
+                }
+            }
+        }
+    }
+
+    func flagEmoji(for langCode: String) -> String {
+        switch langCode {
+        case "TR": return "🇹🇷"
+        case "EN": return "🇬🇧"
+        case "FR": return "🇫🇷"
+        case "DE": return "🇩🇪"
+        case "ES": return "🇪🇸"
+        case "AR": return "🇸🇦"
+        default: return "🌐"
+        }
+    }
+
+    // Dile göre gruplandırılmış kaynakları çek
+    func fetchSourcesGrouped() {
+        let urlString = "https://armedia.live/fetch_kaynak_grouped.php"
         guard let url = URL(string: urlString) else {
             print("Invalid URL")
             return
         }
-        
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        let bodyString = ""
-        request.httpBody = bodyString.data(using: .utf8)
-        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-        
-        let task = URLSession.shared.dataTask(with: request) { (data, response, error) in
+
+        let task = URLSession.shared.dataTask(with: url) { (data, response, error) in
             DispatchQueue.main.async {
-                self.isLoading = false // Hide loading indicator after request completes
+                self.isLoading = false
             }
-            
+
             if let error = error {
                 print("Error: \(error)")
                 return
             }
-            
+
             guard let data = data else {
                 print("No data received")
                 return
             }
-            
+
             do {
-                if let jsonResponse = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
-                   let kaynak = jsonResponse["kaynak"] as? [String] {
+                if let jsonResponse = try JSONSerialization.jsonObject(with: data, options: []) as? [String: [String]] {
+                    // Sıralama: TR > EN > FR > diğer
+                    let sortOrder: [String: Int] = ["TR": 0, "EN": 1, "FR": 2]
+                    let sorted = jsonResponse.sorted { a, b in
+                        let orderA = sortOrder[a.key] ?? 99
+                        let orderB = sortOrder[b.key] ?? 99
+                        return orderA < orderB
+                    }
+
                     DispatchQueue.main.async {
-                        self.kaynak = kaynak // Update the UI with fetched kaynak
+                        self.groupedSources = sorted.map { (lang: $0.key, sources: $0.value) }
                     }
                 } else {
-                    print("Parsing error")
+                    print("Parsing error: unexpected JSON format")
                 }
             } catch {
                 print("JSON parsing error: \(error)")
             }
         }
-        
+
         task.resume()
     }
 
@@ -100,33 +146,31 @@ struct Kaynak: View {
         } else {
             tappedSources.insert(category)
         }
-        
-        //saveTappedSources() // Save the tapped kaynak to the database
-        
+
         if let user = authViewModel.user {
             let urlString = "https://armedia.live/arama_kaynak.php?kaynak=\(category)&user=\(user.username)"
             guard let url = URL(string: urlString) else {
                 print("Invalid URL")
                 return
             }
-            
+
             var request = URLRequest(url: url)
             request.httpMethod = "GET"
-            
+
             let task = URLSession.shared.dataTask(with: request) { (data, response, error) in
                 if let error = error {
                     print("Error: \(error)")
                     return
                 }
-                
+
                 guard let _ = data else {
                     print("No data received")
                     return
                 }
-                
+
                 print("Request successful for category: \(category)")
             }
-            
+
             task.resume()
         }
     }
@@ -136,67 +180,66 @@ struct Kaynak: View {
         guard let user = authViewModel.user else {
             return
         }
-        
+
         let selectedSourcesArray = Array(tappedSources)
         let kaynakString = selectedSourcesArray.joined(separator: ",")
-        
+
         let urlString = "https://armedia.live/save_tapped_sources.php"
         guard let url = URL(string: urlString) else {
             print("Invalid URL")
             return
         }
-        
+
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        
-        // Prepare body data
+
         let bodyString = "user=\(user.username)&kaynak=\(kaynakString)"
         request.httpBody = bodyString.data(using: .utf8)
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-        
+
         let task = URLSession.shared.dataTask(with: request) { (data, response, error) in
             if let error = error {
                 print("Error: \(error)")
                 return
             }
-            
+
             guard let _ = data else {
                 print("No data received")
                 return
             }
-            
+
             print("Tapped kaynak saved")
         }
-        
+
         task.resume()
     }
 
     // Load tapped kaynak from the database
     func loadTappedSources() {
         guard let user = authViewModel.user else { return }
-        
+
         let urlString = "https://armedia.live/load_tapped_sources.php?user=\(user.username)"
         guard let url = URL(string: urlString) else {
             print("Invalid URL")
             return
         }
-        
+
         let task = URLSession.shared.dataTask(with: url) { (data, response, error) in
             if let error = error {
                 print("Error: \(error)")
                 return
             }
-            
+
             guard let data = data else {
                 print("No data received")
                 return
             }
-            
+
             do {
                 if let jsonResponse = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
-                   let kaynak = jsonResponse["kaynak"] as? [String] { // ✅ Diziyi doğru parse et
+                   let kaynak = jsonResponse["kaynak"] as? [String] {
                     DispatchQueue.main.async {
-                        self.tappedSources = Set(kaynak) // ✅ Direkt Set içine ata
+                        self.tappedSources = Set(kaynak)
                     }
                 } else {
                     print("Parsing error")
@@ -205,7 +248,7 @@ struct Kaynak: View {
                 print("JSON parsing error: \(error)")
             }
         }
-        
+
         task.resume()
     }
 }
