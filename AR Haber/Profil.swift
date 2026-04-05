@@ -397,9 +397,9 @@ enum ProfileTab: Int, CaseIterable {
 
     var title: String {
         switch self {
-        case .ozelAkis: return "Özel Akış"
-        case .begenilenler: return "Beğenilenler"
-        case .kaydedilenler: return "Kaydedilenler"
+        case .ozelAkis: return String(localized: "Özel Akış")
+        case .begenilenler: return String(localized: "Beğenilenler")
+        case .kaydedilenler: return String(localized: "Kaydedilenler")
         }
     }
 
@@ -513,7 +513,7 @@ struct Profil: View {
                 } else {
                     // MARK: - Giriş Yapmamış Kullanıcı
                     VStack(spacing: 20) {
-                        Text(isLogin ? "Giriş Yap" : "Kayıt Ol")
+                        Text(isLogin ? String(localized: "Giriş Yap") : String(localized: "Kayıt Ol"))
                             .font(.largeTitle)
                             .fontWeight(.bold)
                             .padding(.top, 40)
@@ -548,23 +548,23 @@ struct Profil: View {
                         }
 
                         if !isLogin {
-                            TextField("Ad Soyad", text: $ad_soyad)
+                            TextField(String(localized: "Ad Soyad"), text: $ad_soyad)
                                 .textFieldStyle(RoundedBorderTextFieldStyle())
                                 .padding(.horizontal)
 
-                            TextField("Telefon (Opsiyonel)", text: $telefon)
+                            TextField(String(localized: "Telefon"), text: $telefon)
                                 .textFieldStyle(RoundedBorderTextFieldStyle())
                                 .padding(.horizontal)
                                 .keyboardType(.phonePad)
 
-                            TextField("E-posta", text: $email)
+                            TextField(String(localized: "E-posta"), text: $email)
                                 .textFieldStyle(RoundedBorderTextFieldStyle())
                                 .padding(.horizontal)
                                 .keyboardType(.emailAddress)
                                 .autocapitalization(.none)
                         }
 
-                        TextField("Kullanıcı Adı", text: $username)
+                        TextField(String(localized: "Kullanıcı Adı"), text: $username)
                             .textFieldStyle(RoundedBorderTextFieldStyle())
                             .padding(.horizontal)
                             .autocapitalization(.none)
@@ -573,7 +573,7 @@ struct Profil: View {
                                     of: " ", with: "")
                             }
 
-                        SecureField("Şifre", text: $password)
+                        SecureField(String(localized: "Şifre"), text: $password)
                             .textFieldStyle(RoundedBorderTextFieldStyle())
                             .padding(.horizontal)
 
@@ -613,7 +613,7 @@ struct Profil: View {
                         }
 
                         Button(action: handleAuth) {
-                            Text(isLogin ? "Giriş Yap" : "Kayıt Ol")
+                            Text(isLogin ? String(localized: "Giriş Yap") : String(localized: "Kayıt Ol"))
                                 .font(.headline)
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)

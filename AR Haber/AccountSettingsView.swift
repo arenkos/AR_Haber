@@ -16,6 +16,7 @@ struct WebViewItem: Identifiable {
 
 struct AccountSettingsView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
+    @AppStorage("AppLanguage") var appLanguage: String = ""
     @State private var newPassword = ""
     @State private var confirmPassword = ""
     @State private var errorMessage = ""
@@ -56,10 +57,10 @@ struct AccountSettingsView: View {
                     SettingsRowView(icon: "at", title: "Kullanıcı Adı", value: user.username)
                     SettingsRowView(
                         icon: "envelope.fill", title: "E-posta",
-                        value: user.email.isEmpty ? "Belirtilmemiş" : user.email)
+                        value: user.email.isEmpty ? String(localized: "Belirtilmemiş") : user.email)
                     SettingsRowView(
                         icon: "phone.fill", title: "Telefon",
-                        value: user.telefon.isEmpty ? "Belirtilmemiş" : user.telefon)
+                        value: user.telefon.isEmpty ? String(localized: "Belirtilmemiş") : user.telefon)
                 }
 
                 // MARK: - Abonelik
@@ -108,7 +109,7 @@ struct AccountSettingsView: View {
                     Button(action: {
                         webViewItem = WebViewItem(
                             url: "https://armedia.live/gizlilik.php",
-                            title: "Gizlilik Politikası"
+                            title: String(localized: "Gizlilik Politikası")
                         )
                     }) {
                         SettingsLinkRowView(
@@ -118,7 +119,7 @@ struct AccountSettingsView: View {
                     Button(action: {
                         webViewItem = WebViewItem(
                             url: "https://armedia.live/hakkimizda.php",
-                            title: "Hakkımızda"
+                            title: String(localized: "Hakkımızda")
                         )
                     }) {
                         SettingsLinkRowView(
@@ -128,7 +129,7 @@ struct AccountSettingsView: View {
                     Button(action: {
                         webViewItem = WebViewItem(
                             url: "https://armedia.live/iletisim.php",
-                            title: "İletişim"
+                            title: String(localized: "İletişim")
                         )
                     }) {
                         SettingsLinkRowView(
@@ -138,6 +139,15 @@ struct AccountSettingsView: View {
 
                 // MARK: - Uygulama Bilgisi
                 Section(header: Text("Uygulama")) {
+                    Picker("Dil / Language", selection: $appLanguage) {
+                        Text("Sistem Varsayılanı").tag("")
+                        Text("Türkçe").tag("tr")
+                        Text("English").tag("en")
+                        Text("Français").tag("fr")
+                        Text("Deutsch").tag("de")
+                        Text("العربية").tag("ar")
+                    }
+                    
                     NavigationLink(destination: BlockedUsersView()) {
                         HStack {
                             Image(systemName: "hand.raised.fill")
@@ -333,7 +343,7 @@ struct AccountSettingsView: View {
 // MARK: - Yardımcı View'lar
 struct SettingsRowView: View {
     let icon: String
-    let title: String
+    let title: LocalizedStringKey
     let value: String
 
     var body: some View {
@@ -352,7 +362,7 @@ struct SettingsRowView: View {
 
 struct SettingsLinkRowView: View {
     let icon: String
-    let title: String
+    let title: LocalizedStringKey
     let color: Color
 
     var body: some View {

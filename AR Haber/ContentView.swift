@@ -17,7 +17,7 @@ struct ContentView: View {
             TabView(selection: $selectedTab) {
                 Genel_Akis()
                     .tabItem {
-                        Label("Ana sayfa", systemImage: "house.fill")
+                        Label("Ana Sayfa", systemImage: "house.fill")
                             .frame(maxWidth: .infinity)
                             .layoutPriority(1)
                     }
@@ -26,7 +26,7 @@ struct ContentView: View {
                 if authViewModel.isLoggedIn {
                     Kaynak()
                         .tabItem {
-                            Label("Kaynak", systemImage: "newspaper.fill")
+                            Label("Kaynaklar", systemImage: "newspaper.fill")
                                 .frame(maxWidth: .infinity)
                                 .layoutPriority(1)
                         }
@@ -34,7 +34,7 @@ struct ContentView: View {
 
                     Kategori()
                         .tabItem {
-                            Label("Kategori", systemImage: "square.grid.2x2.fill")
+                            Label("Kategoriler", systemImage: "square.grid.2x2.fill")
                                 .frame(maxWidth: .infinity)
                                 .layoutPriority(1)
                         }

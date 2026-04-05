@@ -9,10 +9,20 @@ struct ARHaberApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @StateObject var authViewModel = AuthViewModel()
     @Environment(\.scenePhase) var scenePhase
+    @AppStorage("AppLanguage") var appLanguage: String = ""
+
+    var currentLocale: Locale {
+        if appLanguage.isEmpty {
+            return Locale.current
+        } else {
+            return Locale(identifier: appLanguage)
+        }
+    }
 
     var body: some Scene {
         WindowGroup {
             SplashScreenView()
+                .environment(\.locale, currentLocale)
                 .environmentObject(authViewModel)
                 .onAppear {
                     registerForPushNotifications()

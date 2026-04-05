@@ -25,8 +25,8 @@ struct Genel_Akis: View {
     @State private var interstitial: InterstitialAd?
     @State private var newsClickCount: Int = 0
 
-    // 60 saniyede bir otomatik interstitial için timer
-    let interstitialTimer = Timer.publish(every: 60, on: .main, in: .common).autoconnect()
+    // 300 saniyede (5 dakika) bir otomatik interstitial için timer
+    let interstitialTimer = Timer.publish(every: 300, on: .main, in: .common).autoconnect()
 
     init() {
         loadInterstitial()
@@ -190,11 +190,7 @@ struct Genel_Akis: View {
                 }
             }
         }
-        .onAppear {
-            // Sayfa geçişinde interstitial göster
-            showInterstitialAd()
-        }
-        // 60 saniyede bir otomatik interstitial
+        // 5 dakikada bir otomatik interstitial
         .onReceive(interstitialTimer) { _ in
             showInterstitialAd()
         }

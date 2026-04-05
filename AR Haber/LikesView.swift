@@ -186,15 +186,7 @@ struct LikesView: View {
                 }
             }
         }
-        .onAppear {
-            if !SubscriptionManager.shared.hasAdFreeAccess,
-                let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-                let root = scene.windows.first?.rootViewController
-            {
-                interstitial?.present(from: root)
-                loadInterstitial()
-            }
-        }
+        // Sayfa geçişinde interstitial reklamı kaldırıldı
     }
     func loadUserReactions(completion: @escaping () -> Void = {}) {
         guard let user = authViewModel.user else { return }

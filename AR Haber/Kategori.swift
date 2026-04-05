@@ -11,7 +11,8 @@ import GoogleMobileAds
 
 struct Kategori: View {
     @EnvironmentObject var authViewModel: AuthViewModel
-    @State private var categories: [String] = []
+    @State private var groupedCategories: [(lang: String, sources: [String])] = []
+    @State private var collapsedSections: Set<String> = []
     @State private var isLoading = true
     @State var tappedCategories: Set<String> = []
     
@@ -21,16 +22,24 @@ struct Kategori: View {
                 ProgressView("Loading categories...")
                     .progressViewStyle(CircularProgressViewStyle())
             } else {
-                List(categories, id: \.self) { category in
-                    HStack {
-                        Text(category)
-                        Spacer()
-                        Button(action: {
-                            toggleBell(for: category)
-                        }) {
-                            Image(systemName: tappedCategories.contains(category) ? "bell.fill" : "bell")
-                                .foregroundColor(tappedCategories.contains(category) ? .yellow : .gray)
-                                .imageScale(.large)
+                List {
+                    ForEach(groupedCategories, id: \.lang) { group in
+                        Section(header: languageHeader(for: group.lang, isExpanded: !collapsedSections.contains(group.lang))) {
+                            if !collapsedSections.contains(group.lang) {
+                                ForEach(group.sources, id: \.self) { category in
+                                    HStack {
+                                        Text(category)
+                                        Spacer()
+                                        Button(action: {
+                                            toggleBell(for: category)
+                                        }) {
+                                            Image(systemName: tappedCategories.contains(category) ? "bell.fill" : "bell")
+                                                .foregroundColor(tappedCategories.contains(category) ? .yellow : .gray)
+                                                .imageScale(.large)
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -42,23 +51,61 @@ struct Kategori: View {
         }
     }
     
+    @ViewBuilder
+    func languageHeader(for langCode: String, isExpanded: Bool) -> some View {
+        HStack(spacing: 6) {
+            Text(flagEmoji(for: langCode))
+                .font(.headline)
+            Text(langCode)
+                .font(.headline)
+                .fontWeight(.bold)
+            Spacer()
+            Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                .foregroundColor(.secondary)
+        }
+        .padding(.vertical, 8)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            withAnimation {
+                if collapsedSections.contains(langCode) {
+                    collapsedSections.remove(langCode)
+                } else {
+                    collapsedSections.insert(langCode)
+                }
+            }
+        }
+    }
+
+    func flagEmoji(for langCode: String) -> String {
+        switch langCode {
+        case "TR": return "🇹🇷"
+        case "EN": return "🇬🇧"
+        case "FR": return "🇫🇷"
+        case "DE": return "🇩🇪"
+        case "ES": return "🇪🇸"
+        case "AR": return "🇸🇦"
+        default: return "🌐"
+        }
+    }
+
     // Fetch categories from the server
     func fetchCategories() {
-        let urlString = "https://armedia.live/fetch_kategori.php"
+        let urlString = "https://armedia.live/fetch_kategori_grouped.php"
         guard let url = URL(string: urlString) else { return }
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.httpBody = "".data(using: .utf8)
-        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-        
-        let task = URLSession.shared.dataTask(with: request) { data, response, error in
+
+        let task = URLSession.shared.dataTask(with: url) { data, response, error in
             DispatchQueue.main.async { self.isLoading = false }
             if let data = data {
                 do {
-                    if let jsonResponse = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-                       let categories = jsonResponse["kategori"] as? [String] {
+                    if let jsonResponse = try JSONSerialization.jsonObject(with: data, options: []) as? [String: [String]] {
+                        let sortOrder: [String: Int] = ["TR": 0, "EN": 1, "FR": 2]
+                        let sorted = jsonResponse.sorted { a, b in
+                            let orderA = sortOrder[a.key] ?? 99
+                            let orderB = sortOrder[b.key] ?? 99
+                            return orderA < orderB
+                        }
                         DispatchQueue.main.async {
-                            self.categories = categories
+                            self.groupedCategories = sorted.map { (lang: $0.key, sources: $0.value) }
                         }
                     }
                 } catch {
