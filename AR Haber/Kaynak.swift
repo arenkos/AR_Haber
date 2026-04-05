@@ -30,6 +30,7 @@ struct Kaynak: View {
                                 ForEach(group.sources, id: \.self) { category in
                                     HStack {
                                         CachedLogoImage(sourceName: category, height: 20)
+                                        Text(category)
 
                                         Spacer()
 
