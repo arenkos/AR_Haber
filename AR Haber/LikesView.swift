@@ -150,9 +150,15 @@ struct LikesView: View {
             }
             .sheet(isPresented: $showWebView) {
                 if let selectedNews = selectedNewsManager.selectedNews {
-                    // Tıklanma kaydı - ID kullanarak
+                    // Tıklanma kaydı - ID ve username kullanarak
+                    let tiklanmaURL: String = {
+                        if let user = authViewModel.user {
+                            return "https://armedia.live/tiklanma.php?id=\(selectedNews.id)&username=\(user.username)"
+                        }
+                        return "https://armedia.live/tiklanma.php?id=\(selectedNews.id)"
+                    }()
                     WebViewContainer(
-                        urlString: "https://armedia.live/tiklanma.php?id=\(selectedNews.id)"
+                        urlString: tiklanmaURL
                     ) {
                         showWebView = false
                     }
